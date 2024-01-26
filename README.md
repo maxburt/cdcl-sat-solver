@@ -1,5 +1,6 @@
 [![Review Assignment Due Date](https://classroom.github.com/assets/deadline-readme-button-24ddc0f5d75046c5622901739e7c5dd533143b0c8e959d652212380cedb1ea36.svg)](https://classroom.github.com/a/JOARfkpj)
-# CDCL SAT solver.
+
+# CDCL SAT solver. TEST
 
 This repository contains the framework you must extend to solve
 Programming Assignment 1. In the following sections, we describe how you can build
@@ -26,7 +27,6 @@ $ mvn package
 This will create a JAR named
 `pa1-1.0-SNAPSHOT-jar-with-dependencies.jar` under directory `target`.
 
-
 ### Running the Project.
 
 To run the project simply run the following command:
@@ -35,7 +35,7 @@ To run the project simply run the following command:
 $ java -cp target/pa1-1.0-SNAPSHOT-jar-with-dependencies.jar <fully qualified name of Main class>
 ```
 
-The program accepts the formula through the standard input. If you are 
+The program accepts the formula through the standard input. If you are
 typing the expression manually on the terminal, you must also explicitly
 type EOF (Ctrl+d in UNIX systems). The easiest way would be to redirect
 the input from a file to the application, like the following:
@@ -50,7 +50,7 @@ or `UNSAT` depending on the return value of the `checkSAT`.
 
 By default, invoking the tool with this class is going
 to throw an `UnsupportedOperationException` with the message
-"implement this". To complete this programming assignment, 
+"implement this". To complete this programming assignment,
 you must implement the body of `SatUtil.checkSat` that throws this type of exception.
 
 ### Input Format.
@@ -89,17 +89,17 @@ design and implement an implication graph. This is a key part
 of the assignment and so we provide some general guidelines.
 In general, your implication graph should be able to:
 
-* track a set of root nodes.
-* track the current decision level.
-* track the decision level at each node.
-* track the clause associated with each edge.
-* track unique implication points.
-* etc.
+- track a set of root nodes.
+- track the current decision level.
+- track the decision level at each node.
+- track the clause associated with each edge.
+- track unique implication points.
+- etc.
 
 ### Creating and manipulating expressions.
 
 You should not have to use any of the information in this section
-as the required infrastructure is already implemented. This is 
+as the required infrastructure is already implemented. This is
 included merely as a reference.
 
 Package `edu.utexas.cs.alr.ast` contains classes that describe
