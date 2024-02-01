@@ -25,11 +25,10 @@ public class SatUtil {
     {   
         //converts CNF formula to a list of Clause objects
         List<Clause> clauses = CNFConverter.convertToClauses(expr);
-    
-
+        CDCLSolver solver = new CDCLSolver(clauses);
         System.out.println(expr); 
         //printing out the clauses for reference
-        CNFConverter.printClauses(clauses);
+        CNFConverter.printClauses(solver.clauses);
 
         //replace body with your implementation
         throw new UnsupportedOperationException("implement this");
