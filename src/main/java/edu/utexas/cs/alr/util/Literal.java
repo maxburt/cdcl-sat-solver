@@ -17,4 +17,14 @@ public class Literal {
     public boolean isNegated() {
         return isNegated;
     }
+
+
+    // Returns a negated version of the literal
+    // i.e. if literal is !x1, it returns x1,
+    // if literal is x1 it returns !x1.
+    public Literal negate() {
+        // Create a new Literal with the same variable but opposite negation status
+        return new Literal(this.variable, !this.isNegated);
+    }
+    
 }

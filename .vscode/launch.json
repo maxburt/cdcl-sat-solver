@@ -1,0 +1,17 @@
+{
+    "version": "0.2.0",
+    "configurations": [
+        {
+            "type": "java",
+            "name": "Launch Main",
+            "request": "launch",
+            "mainClass": "edu.utexas.cs.alr.SATDriver",
+            "args": "",
+            "projectName": "SATDriver",
+            "classPaths": [
+                "${workspaceFolder}/target/pa1-1.0-SNAPSHOT-jar-with-dependencies.jar"
+            ],
+            "console": "internalConsole"
+        }
+    ]
+}
