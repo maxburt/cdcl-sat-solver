@@ -1,1 +1,1 @@
-(not x1)
+(and x1 (not x1))

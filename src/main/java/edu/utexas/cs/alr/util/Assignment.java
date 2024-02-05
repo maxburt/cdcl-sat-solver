@@ -67,7 +67,8 @@ class Assignment {
     @Override
     public String toString() {
         // Represents the literal assignment in a readable format
-        String literalRepresentation = (literal.isNegated() ? "¬" : "") + "x" + literal.getVariable();
+        String literalRepresentation = (literal.isNegated() ? "!" : "") + "x" + literal.getVariable();
+        literalRepresentation += (this.type == Assignment.AssignmentType.DECISION ? "  Decision" : "  Implication");
         return literalRepresentation + " = " + value + " at level " + decisionLevel;
     }
 }

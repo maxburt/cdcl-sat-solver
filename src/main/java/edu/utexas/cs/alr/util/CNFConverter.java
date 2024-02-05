@@ -14,6 +14,23 @@ public class CNFConverter {
     }
 
     //function to print a list of Clauses
+        public static void printClause(Clause clause) {
+            System.out.print("Clause " + ": ");
+
+            List<Literal> literals = clause.getLiterals();
+            for (int j = 0; j < literals.size(); j++) {
+                Literal literal = literals.get(j);
+                String literalStr = (literal.isNegated() ? "!" : "") + "x" + literal.getVariable();
+                
+                System.out.print(literalStr);
+                if (j < literals.size() - 1) {
+                    System.out.print(" | "); 
+                }
+            }
+            System.out.println();
+
+
+    }
     public static void printClauses(List<Clause> clauses) {
         for (int i = 0; i < clauses.size(); i++) {
             Clause clause = clauses.get(i);

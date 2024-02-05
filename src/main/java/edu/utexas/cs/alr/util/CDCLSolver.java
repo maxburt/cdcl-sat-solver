@@ -1,3 +1,5 @@
+//  run with 
+//      java -cp target/pa1-1.0-SNAPSHOT-jar-with-dependencies.jar edu.utexas.cs.alr.SATDriver < <path to input file>
 package edu.utexas.cs.alr.util;
 import edu.utexas.cs.alr.ast.Expr;
 import edu.utexas.cs.alr.ast.*;
@@ -16,18 +18,17 @@ import static edu.utexas.cs.alr.ast.ExprFactory.*;
 import static edu.utexas.cs.alr.util.ExprWalker.dfsWalk;
 
 
-
 public class CDCLSolver {
-
+    public boolean verbose;
     public List<Clause> clauses; // The CNF formula as a list of clauses
-    public List<Clause> learnedClauses; // conflict Clauses learned through implication graph, initially empty
+/* not used yet*/    public List<Clause> learnedClauses; // conflict Clauses learned through implication graph, initially empty
     private ImplicationGraph implicationGraph;  //contains Nodes that contain assigments and antecedents
     private Stack<Assignment> assignmentStack; // To track variable assignments
     private int currentDecisionLevel;
 
-
     //Constructor
     public CDCLSolver(List<Clause> clauses) {
+        this.verbose = true;
         this.clauses = clauses;
         this.learnedClauses = new ArrayList<>();
         this.implicationGraph = new ImplicationGraph();
@@ -39,20 +40,25 @@ public class CDCLSolver {
     // Main method to solve the SAT problem
     public boolean solve() {
         while (true) {
-
+            
             boolean decisionMade = makeDecision();
+
             if (!decisionMade) {    //No decision made, so its either satisfied currently, or it cant be satisfied
                 return isSatisfied();
             }
 
-            //perform BCP as much as possible or until a conflict occurs
-            boolean conflict = unitPropagation();
+            //Start the BCP process
+            Clause conflict = unitPropagation();    //if conflict encountered, returns a clause
 
-            if (conflict) {
+            if (conflict != null) {     //BCP lead to a conflict
+
                 if (currentDecisionLevel == 0) {
                     return false; // Conflict at base level, so UNSAT
                 }
+
+                /*maybe i dont need analyze conflict */
                 analyzeConflict();
+                
                 backtrack();
 
 
@@ -63,53 +69,58 @@ public class CDCLSolver {
     }
 
     //currently finds first unassigned literal from first unsatisfied clause
-    //doesn't use decision heuristic or watch literals YET
     private boolean makeDecision() {
 
-        //look for decision literal in learnedClauses
+        //look for first unassigned literal in the first unsatisfied clause of learned clauses
         Literal decisionLiteral = findUnassignedLiteralFromUnsatisfiedClauses(learnedClauses);
+
         if (decisionLiteral == null) {
+            
             // If no suitable literal is found in learned clauses, check original clauses
             decisionLiteral = findUnassignedLiteralFromUnsatisfiedClauses(clauses);
         }
 
-        //Make a decision on the literal
+        //Make a satisfying decision on the literal
         if (decisionLiteral != null) {
-            boolean value = true; // dumb approach, assigns value to TRUE arbitrarily
+            boolean value = !decisionLiteral.isNegated();
             currentDecisionLevel++;
+            
+            //Add new assignment to stack
             Assignment decision = new Assignment(decisionLiteral, value, currentDecisionLevel, Assignment.AssignmentType.DECISION);
             assignmentStack.push(decision);
+            
+            //Add assignment to implication graph
             implicationGraph.addDecision(decision);
             return true; // A decision has been made
         }
         
-        // No decision could be made, indicating all clauses are satisfied or a deadlock situation
+        // No decision could be made, indicating all clauss are assigned
+        // formula could be satisfied or a deadlock situation
         return false; 
     }
 
     //function that starts BCP
-    //returns true if a conflict is detected
-    //returns false if no conflicts
-    private boolean unitPropagation() {
+    //if a conflict is detected it returns the unit clause
+    //in which a conflict is occuring
+    private Clause unitPropagation() {   
         boolean changeMade;
         do {
             changeMade = false;
 
             for (Clause clause : getAllClauses()) { //loop through all clauses, learned and original
-                
                 // skip satisfied clauses
                 if (clauseIsSatisfied(clause)) {
                     continue;
-                }
+                }             
 
+                //what makes a clause a unit clause
                 if (isUnitClause(clause)) { //clause is an unsatisfied unit clause
-                    
                     Literal unitLiteral = getUnassignedLiteral(clause);
-                    
-                    if (unitLiteral == null || isConflict(unitLiteral)) {
-                        return true; // Conflict detected
+                    //check if assigning the unitLiteral would cause a conflict
+                    if (unitLiteral == null || isConflict(unitLiteral, clause)) {
+                        return clause; // Conflict conflict clause
                     }
-
+                    
                     //perform unit propogation on the other clauses
                     propagate(unitLiteral, clause);
                     
@@ -118,22 +129,57 @@ public class CDCLSolver {
             }
         } while (changeMade); //if a change has been made, start the loop again
 
-    return false; // No conflicts detected, no more changes made
+    return null; // No conflicts detected
     }
 
+
+    //this function analyzes the implication graph
+    //finds the nearest UIP from conflict node
     private void analyzeConflict() {
-        // Implement conflict analysis here
-        // Analyze the implication graph to learn a new clause
-        // Determine the backtracking level
+        if (verbose) System.out.println("Analyzing conflict...");
+        //Get conflict node from implication graph
+        Node conflictNode = implicationGraph.getConflictNode();
+        Node UIP = null;
+        if (conflictNode != null) {
+            if (verbose) System.out.println("Got conflict node..."); 
+
+            //Get all paths from last decision node to conflict node
+            List<List<Node>> paths = implicationGraph.findAllPathsFromDecisionToConflict(conflictNode); 
+            
+            if (paths == null) {
+                System.err.println("Error last decision node to conflict node");
+                System.exit(1);
+            }
+
+            //Find Unique implication point closest to conflict node
+            UIP = implicationGraph.findClosestCommonNode(paths, conflictNode);
+            if (UIP == null) {
+                System.err.println("Could not find UIP from paths");
+                System.exit(1);
+            } else {
+                if (verbose) System.out.println("Found UIP. UIP is " + UIP.getAssignment());
+            }
+
+        } else {
+            System.err.println("No conflict node detected in graph");
+            System.exit(1);
+        }
+
+        //use the conflict node and UIP to create a new clause to add to the learnedClauses list
+        Clause learnedClause = implicationGraph.createLearnedClause(UIP, conflictNode);
+        learnedClauses.add(0, learnedClause);
+        
+        //backtrack the implication graph, the assignment stack, and the decision level
+        //accoring to our heuristic from the larned clause
+        backtrack();
     }
 
     private void backtrack() {
         // Implement backtracking logic here
         // Undo assignments and implications made after the conflict level
         // Update implicationGraph and assignmentStack
+        implicationGraph.removeConflictNode();
     }
-
-
 
 
 
@@ -177,14 +223,48 @@ public class CDCLSolver {
     }
 
 
-    //checks if the negation of the literal is already been assgined true
-    private boolean isConflict(Literal literal) {
-        // Check if assigning this literal would cause a conflict
-        // This usually means checking if the negation of the literal has already been assigned true
-        Literal negatedLiteral = literal.negate();
-        return literalIsAssigned(negatedLiteral) && literalIsTrue(negatedLiteral);
-    }
+//checks if assigning the literal to evaluate to true (adding a unit clause) would
+//make any of the clauses false
+private boolean isConflict(Literal literal, Clause unitClause) {
+    return testAssignmentForConflict(literal, unitClause);
+}
 
+//this function creates a temporary assignment of the literal to evaluate to true
+private boolean testAssignmentForConflict(Literal literal, Clause unitClause) {
+    // Temporarily add the assignment
+    Assignment assignment = new Assignment(literal, !literal.isNegated(), currentDecisionLevel, Assignment.AssignmentType.IMPLICATION);
+    assignmentStack.push(assignment);
+    // Check if any clause becomes unsatisfiable
+    for (Clause clause : getAllClauses()) {
+        if (!clauseIsSatisfied(clause) && allLiteralsFalse(clause)) {
+            //THIS IS A CONFLICTING ASSIGNMENT
+             
+            if (verbose == true) System.out.println("This assignment causes a clause to becomes false " + assignmentStack.peek());
+           
+            //Add assignment as a conflict node to the implication graph
+            implicationGraph.addConflictNode(assignment, unitClause);
+            
+            assignmentStack.pop(); // Revert the temporary assignment
+            return true; // Conflict detected
+        }
+    }
+    // No conflict found, revert the temporary assignment
+    assignmentStack.pop();
+    return false; // No conflict detected
+}
+
+//helper function that looks at a clause and returns true if
+//all literals are assigned to false
+private boolean allLiteralsFalse(Clause clause) {
+    for (Literal literal : clause.getLiterals()) {
+        if (!literalIsAssigned(literal) || literalIsTrue(literal)) {
+            // If any literal is unassigned or true, the clause is not unsatisfiable
+            return false;
+        }
+    }
+    // All literals are assigned and false, making the clause unsatisfiable
+    return true;
+}
 
     //this function assigns unitLiteral to make it evaluate true
     //i.e. if unit clause is !x, it assigns x to false
@@ -308,74 +388,4 @@ public class CDCLSolver {
         }
         return true; // all clauses are satisfied
     }    
-
-
-    //Definition of a Node class, used in implication graph
-    class Node {
-        private Assignment assignment;
-        private List<Node> antecedents; // Nodes that imply this node
-
-        public Node(Assignment assignment) {
-            this.assignment = assignment;
-            this.antecedents = new ArrayList<>();
-        }
-
-        public void addAntecedent(Node antecedent) {
-            antecedents.add(antecedent);
-        }
-    }
-
-    
-    class ImplicationGraph {
-
-        private Map<Integer, Node> nodes; // Map variable to Node
-        private Stack<Node> decisionStack; // To track decision levels
-
-        public ImplicationGraph() {
-            this.nodes = new HashMap<>();
-            this.decisionStack = new Stack<>();
-        }
-
-        //function to add a decision node to the implication graph
-        public void addDecision(Assignment assignment) {
-            //node is a decision node, therefore it has no antecedents
-            Node node = new Node(assignment);
-           
-            //add node to nodes map object
-            nodes.put(assignment.getLiteral().getVariable(), node);
-            
-            //add it to decision stack as well
-            decisionStack.push(node);
-        }
-
-        
-        //function to add an implied node to the implication graph 
-        //takes as input the assignment that was just implied via BCP, as well as the list of
-        //other previous assignments that forced this assignment (antecedents)
-        public void addImplication(Assignment implied, List<Assignment> antecedents) {
-            //adds a new node object to nodes map
-            Node impliedNode = nodes.computeIfAbsent(implied.getLiteral().getVariable(), k -> new Node(implied));
-            
-            //loop through all antecedents passed in
-            for (Assignment antecedent : antecedents) {
-                //get the corresponding antecedent Node from the nodes map
-                Node antecedentNode = nodes.get(antecedent.getLiteral().getVariable());
-                    if (antecedentNode != null) {
-                    //add the antecedent node to the list of antecedents
-                    //within the implied node, thus establishing a relationship
-                    //between the two nodes, an "edge"
-                    impliedNode.addAntecedent(antecedentNode);
-                }
-            }
-        }
-
-
-        //need to fix this function
-        public void backtrack(int toDecisionLevel) {
-            while (!decisionStack.isEmpty() && decisionStack.peek().assignment.getDecisionLevel() > toDecisionLevel) {
-                Node node = decisionStack.pop();
-                nodes.remove(node.assignment.getLiteral().getVariable());
-            }
-        }
-    }
 }
