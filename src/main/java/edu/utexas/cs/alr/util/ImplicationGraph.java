@@ -149,11 +149,11 @@ public class ImplicationGraph {
 
         // Remove references to the conflict node from antecedent nodes' implications
         if (conflictNode != null) {
+            if (verbose) {
+                System.out.println("Removing implications from antecedents");
+            }
             for (Node antecedent : conflictNode.getAntecedents()) {
                 antecedent.removeImplication(conflictNode);
-                if (verbose) {
-                    System.out.println("Removing implications from antecedents");
-                }
             }
         }
         else {
@@ -234,24 +234,25 @@ public class ImplicationGraph {
         Stack<Node> path = new Stack<>();
         Node decisionNode = decisionStack.peek();   // get most recent decision node
         dfsFromDecisionToConflict(decisionNode, conflictNode, allPaths, path);
-        if (verbose) System.out.println(allPaths.size() + " paths found"); 
+        if (verbose) {
+            System.out.println(allPaths.size() + " paths found"); 
+            printListOfLists(allPaths);
+        }
+
         return allPaths;
     }
 
     // Depth-first search (DFS) to find all paths from decision node to conflict node
     private void dfsFromDecisionToConflict(Node currentNode, Node conflictNode, List<List<Node>> allPaths, Stack<Node> path) {
         // Push the current node onto the path stack
-        System.out.println("Pushing " + currentNode.getAssignment() + " to a path");
         path.push(currentNode);        
         // If the current node is the conflict node, add the path to allPaths
         if (currentNode == conflictNode) {
-            if (verbose )System.out.println("Current node equals conflict node. Adding a path");
 
             allPaths.add(new ArrayList<>(path));
         } else {
             // Recursively explore all implications
             for (Node implication : currentNode.getImplications()) {
-                if (verbose) System.out.println("now searching " + implication.getAssignment()); 
                 dfsFromDecisionToConflict(implication, conflictNode, allPaths, path);
             }
         }
@@ -259,7 +260,6 @@ public class ImplicationGraph {
         // Pop the current node from the path stack to backtrack
 
         Node popNode = path.pop();
-        if (verbose) System.out.println("Popping " + popNode.getAssignment());
     }
     /////////
 
@@ -285,7 +285,8 @@ public class ImplicationGraph {
         }
         while (true) {
             //Step 1, check if clause is finished being made
-            
+    
+            //Changing is clause learned 2/6
             if (isClauseLearned(UIP.getAssignment().getLiteral(), learnedClause)) {
                 if (verbose) {
                     System.out.println("Finished making learned clause");
@@ -406,10 +407,6 @@ public class ImplicationGraph {
         return findAssignmentForLiteral(mostRecentLiteral);
     }
 
-    private void performResolution(Node UIP, Clause clause) {
-
-    }
-
     //Generate starting clause for creating learned clause
     private Clause generateStartingClause(Node conflictNode) {
         Clause startingClause = new Clause();
@@ -455,18 +452,27 @@ public class ImplicationGraph {
                 currentDecisionLevelLiteralCount++;
 
                 // If there is more than one literal from the current decision level, the clause is not learned
+                /* 
                 if (currentDecisionLevelLiteralCount > 1) {
                     return false;
                 }
+                */
             }
         }
 
-            if (currentDecisionLevelLiteralCount == 1 && containsUIP) {
+            if (/*currentDecisionLevelLiteralCount == 1  && */containsUIP) {
                 System.out.println("Created a new learned clause ");
                 CNFConverter.printClause(clause);
             }
-            //return true if the current decision level count is only 1, and the 1 is the same as UIP literal
-            return currentDecisionLevelLiteralCount == 1 && containsUIP;
+           
+            if (containsUIP) {
+                return true;
+            }
+            else {
+                return false;
+            }
+            
+            //return currentDecisionLevelLiteralCount == 1 && containsUIP;
     }
 
     //helper function to take a literal, and find the corresponding node that Assigned it
@@ -514,6 +520,9 @@ public class ImplicationGraph {
                 secondHighestDecisionLevel = decisionLevel;
             }
         }
+        if (secondHighestDecisionLevel == Integer.MIN_VALUE) {
+            return highestDecisionLevel - 1; 
+        }
         return secondHighestDecisionLevel;
     }
 
@@ -553,7 +562,7 @@ public class ImplicationGraph {
         for (Node node : nodes.values()) {
             int nodeDecisionLevel = node.getAssignment().getDecisionLevel();
     
-            if (nodeDecisionLevel > decisionLevelToRemove) {
+            if (nodeDecisionLevel >= decisionLevelToRemove) {
                 // Mark the node for removal
                 nodesToRemove.add(node);
     
@@ -567,6 +576,17 @@ public class ImplicationGraph {
         // Remove the marked nodes from the map
         for (Node nodeToRemove : nodesToRemove) {
             nodes.remove(nodeToRemove.getAssignment().getLiteral().getVariable());
+        }
+    }
+
+    //Prints paths, used for debugging
+    private void printListOfLists(List<List<Node>> listOfLists) {
+        for (List<Node> nodeList : listOfLists) {
+            System.out.print("List of lists AKA PATHS: ");
+            for (Node node : nodeList) {
+                System.out.print(node.getAssignment().getLiteral() + " ");
+            }
+            System.out.println(); // Move to the next line for the next list
         }
     }
     

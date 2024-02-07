@@ -38,6 +38,13 @@ public class CDCLSolver {
     // Main method to solve the SAT problem
     public boolean solve() {
         while (true) {
+
+            //Checks learned clauses to see if they contain
+            //unit clauses and their negations
+            if (hasContradictoryUnitClause(learnedClauses)) {
+                System.out.println("Has contradictory unit clauses in learned clause");
+                return false;
+            }
             
             boolean decisionMade = makeDecision();
 
@@ -57,6 +64,10 @@ public class CDCLSolver {
 
                 Clause learnedClause = analyzeConflict();
                 backtrack(learnedClause);
+                System.out.println("Assignment stack :");
+                for (Assignment as : assignmentStack) {
+                    System.out.println("\t" + as);
+                }
 
             } else if (isSatisfied()) {
                 return true; // All variables assigned without conflict, so SAT
@@ -76,9 +87,19 @@ public class CDCLSolver {
             decisionLiteral = findUnassignedLiteralFromUnsatisfiedClauses(clauses);
         }
 
-        //Make a satisfying decision on the literal
         if (decisionLiteral != null) {
-            boolean value = !decisionLiteral.isNegated();
+            //Check if a satisfying decision would
+            //falsify a unit clause in the learnedClauses and clauses list
+            boolean value = false;
+            if (wouldFalsifyUnitClause(decisionLiteral)) {
+                value = decisionLiteral.isNegated(); 
+            }                
+            else {
+                value = !decisionLiteral.isNegated();
+            }            
+            
+            //////////
+            
             currentDecisionLevel++;
             
             //Add new assignment to stack
@@ -183,9 +204,10 @@ public class CDCLSolver {
         int backtrackLevel = implicationGraph.getSecondHighestDecisionLevel(learnedClause);
         
         //RESET ALL VARIABLES TO BACKTRACKLEVEL
-        currentDecisionLevel = backtrackLevel;
+        //added -1 because it will be incremented by makeDecision function
+        currentDecisionLevel = backtrackLevel - 1;
         System.out.println("Backtrack level is " + backtrackLevel);
-        System.out.println("Current decision level is now " + currentDecisionLevel);
+        System.out.println("Current decision level is now " + backtrackLevel);
         backtrackAssignmentList(backtrackLevel);
         implicationGraph.backtrack(backtrackLevel);
     }
@@ -198,7 +220,7 @@ public class CDCLSolver {
             Assignment assignment = iterator.next();
             int decisionLevel = assignment.getDecisionLevel();
             
-            if (decisionLevel > backtrackLevel) {
+            if (decisionLevel >= backtrackLevel) {
                 // Remove the assignment if its decision level is greater than backtrackLevel
                 iterator.remove();
             }
@@ -407,15 +429,47 @@ private boolean allLiteralsFalse(Clause clause) {
             }
         }
         return true; // all clauses are satisfied
-    }  
+    } 
 
-    private void printListOfLists(List<List<Node>> listOfLists) {
-        for (List<Node> nodeList : listOfLists) {
-            System.out.print("List of lists AKA PATHS: ");
-            for (Node node : nodeList) {
-                System.out.print(node.getAssignment().getLiteral() + " ");
+    // Function to check if a list of learned clauses contains a unit clause and its negation
+    private boolean hasContradictoryUnitClause(List<Clause> learnedClauses) {
+        for (Clause clause : learnedClauses) {
+            // Check each clause for being a unit clause
+            if (clause.getLiterals().size() == 1) {
+                Literal literal = clause.getLiterals().get(0);
+                Literal negation = new Literal(literal.getVariable(), !literal.isNegated());
+                // Check if the negation of the unit clause is also present in the learned clauses
+                if (containsUnitLiteral(learnedClauses, negation)) {
+                    return true; // Found a unit clause and its negation
+                }
             }
-            System.out.println(); // Move to the next line for the next list
         }
+        return false; // No contradictory unit clause found
+    }
+    
+    // Helper function to check if a list of clauses contains a specific literal
+    private static boolean containsUnitLiteral(List<Clause> clauses, Literal literal) {
+        for (Clause clause : clauses) {
+            if (clause.getLiterals().size() == 1 && clause.containsLiteralExactly(literal)) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    // Helper function to determine if satisfying a given decision literal
+    // would falsify a unit clause within the learned list and 
+    private boolean wouldFalsifyUnitClause(Literal decisionLiteral) {
+        for (Clause clause : learnedClauses) {
+           
+            if (clause.getLiterals().size() == 1) {
+                if (clause.getLiterals().get(0).getVariable() == decisionLiteral.getVariable()) {
+                    if (clause.getLiterals().get(0).isNegated() != decisionLiteral.isNegated()) {
+                        return true;
+                    }
+                }
+            }
+        }
+        return false;
     }
 }

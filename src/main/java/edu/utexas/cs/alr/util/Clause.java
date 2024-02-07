@@ -12,6 +12,16 @@ public class Clause {
         literals.add(0, literal); 
     }
 
+    // Function to check if the clause contains a specific literal
+    public boolean containsLiteralExactly(Literal literal) {
+        for (Literal l: literals) {
+            if (l.getVariable() == literal.getVariable() && l.isNegated() == literal.isNegated()) {
+                return true;
+            }
+        }
+        return false;
+    }
+
     // Getters
     public List<Literal> getLiterals() {
         return literals;

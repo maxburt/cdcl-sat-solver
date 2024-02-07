@@ -19,7 +19,6 @@ import java.util.stream.Stream;
 import static edu.utexas.cs.alr.ast.ExprFactory.*;
 import static edu.utexas.cs.alr.util.ExprWalker.dfsWalk;
 
-
 public class SatUtil {
     public static boolean checkSAT(Expr expr)
     {   
@@ -27,12 +26,11 @@ public class SatUtil {
         List<Clause> clauses = CNFConverter.convertToClauses(expr);
         CDCLSolver solver = new CDCLSolver(clauses);
        
-        System.out.println(expr); 
         //printing out the clauses for reference
         CNFConverter.printClauses(solver.clauses);
+        
+        //return false;
         return solver.solve();
 
-        //replace body with your implementation
-        //throw new UnsupportedOperationException("implement this");
     }
 }
