@@ -66,6 +66,7 @@ public class Node {
             System.out.println("\t" + antecedent.assignment);
         }
     }
+    
     public void printImplications() {
         System.out.println("Implications for this node are ... ");
         for (Node antecedent : antecedents) {

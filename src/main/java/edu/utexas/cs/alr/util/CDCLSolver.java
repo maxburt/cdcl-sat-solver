@@ -17,11 +17,10 @@ import java.util.stream.Stream;
 import static edu.utexas.cs.alr.ast.ExprFactory.*;
 import static edu.utexas.cs.alr.util.ExprWalker.dfsWalk;
 
-
 public class CDCLSolver {
     public boolean verbose;
     public List<Clause> clauses; // The CNF formula as a list of clauses
-/* not used yet*/    public List<Clause> learnedClauses; // conflict Clauses learned through implication graph, initially empty
+    public List<Clause> learnedClauses; // conflict Clauses learned through implication graph, initially empty
     private ImplicationGraph implicationGraph;  //contains Nodes that contain assigments and antecedents
     private Stack<Assignment> assignmentStack; // To track variable assignments
     private int currentDecisionLevel;
@@ -35,7 +34,6 @@ public class CDCLSolver {
         this.assignmentStack = new Stack<>();
         this.currentDecisionLevel = 0;
     }
-
 
     // Main method to solve the SAT problem
     public boolean solve() {
@@ -51,16 +49,14 @@ public class CDCLSolver {
             Clause conflict = unitPropagation();    //if conflict encountered, returns a clause
 
             if (conflict != null) {     //BCP lead to a conflict
+                if (verbose) System.out.println("Conflict detected");
 
                 if (currentDecisionLevel == 0) {
                     return false; // Conflict at base level, so UNSAT
                 }
 
-                /*maybe i dont need analyze conflict */
-                analyzeConflict();
-                
-                backtrack();
-
+                Clause learnedClause = analyzeConflict();
+                backtrack(learnedClause);
 
             } else if (isSatisfied()) {
                 return true; // All variables assigned without conflict, so SAT
@@ -133,9 +129,10 @@ public class CDCLSolver {
     }
 
 
-    //this function analyzes the implication graph
-    //finds the nearest UIP from conflict node
-    private void analyzeConflict() {
+    //This function essentially analyzes the implcation
+    //to create a new learned clause, and returns that clause as well as adds it
+    //to learnedClause list object
+    private Clause analyzeConflict() {
         if (verbose) System.out.println("Analyzing conflict...");
         //Get conflict node from implication graph
         Node conflictNode = implicationGraph.getConflictNode();
@@ -145,7 +142,6 @@ public class CDCLSolver {
 
             //Get all paths from last decision node to conflict node
             List<List<Node>> paths = implicationGraph.findAllPathsFromDecisionToConflict(conflictNode); 
-            
             if (paths == null) {
                 System.err.println("Error last decision node to conflict node");
                 System.exit(1);
@@ -153,13 +149,13 @@ public class CDCLSolver {
 
             //Find Unique implication point closest to conflict node
             UIP = implicationGraph.findClosestCommonNode(paths, conflictNode);
+
             if (UIP == null) {
                 System.err.println("Could not find UIP from paths");
                 System.exit(1);
             } else {
                 if (verbose) System.out.println("Found UIP. UIP is " + UIP.getAssignment());
             }
-
         } else {
             System.err.println("No conflict node detected in graph");
             System.exit(1);
@@ -167,23 +163,47 @@ public class CDCLSolver {
 
         //use the conflict node and UIP to create a new clause to add to the learnedClauses list
         Clause learnedClause = implicationGraph.createLearnedClause(UIP, conflictNode);
-        learnedClauses.add(0, learnedClause);
+        if (learnedClause != null) {
+            //Add learned clause to learnedClause map
+            learnedClauses.add(0, learnedClause);
+            if (verbose) {
+                System.out.println("Added learned clause to list");
+                CNFConverter.printClauses(learnedClauses);
+            }
+        } else {
+            System.err.println("Error creating learned clause from implication graph");
+            System.exit(1);
+        }
+        return learnedClause;
+    }
+
+    //Backtrack to a decision level that makes the new learned clause an asserting clause
+    //in the next decision step
+    private void backtrack(Clause learnedClause) {
+        int backtrackLevel = implicationGraph.getSecondHighestDecisionLevel(learnedClause);
         
-        //backtrack the implication graph, the assignment stack, and the decision level
-        //accoring to our heuristic from the larned clause
-        backtrack();
+        //RESET ALL VARIABLES TO BACKTRACKLEVEL
+        currentDecisionLevel = backtrackLevel;
+        System.out.println("Backtrack level is " + backtrackLevel);
+        System.out.println("Current decision level is now " + currentDecisionLevel);
+        backtrackAssignmentList(backtrackLevel);
+        implicationGraph.backtrack(backtrackLevel);
     }
 
-    private void backtrack() {
-        // Implement backtracking logic here
-        // Undo assignments and implications made after the conflict level
-        // Update implicationGraph and assignmentStack
-        implicationGraph.removeConflictNode();
+    //helper function to backtrack assignment stack
+    private void backtrackAssignmentList(int backtrackLevel) {
+        Iterator<Assignment> iterator = assignmentStack.iterator();
+    
+        while (iterator.hasNext()) {
+            Assignment assignment = iterator.next();
+            int decisionLevel = assignment.getDecisionLevel();
+            
+            if (decisionLevel > backtrackLevel) {
+                // Remove the assignment if its decision level is greater than backtrackLevel
+                iterator.remove();
+            }
+        }
     }
-
-
-
-
 
     //helper function to combine original clauses and learned clauses.
     //used in BCP function
@@ -234,12 +254,12 @@ private boolean testAssignmentForConflict(Literal literal, Clause unitClause) {
     // Temporarily add the assignment
     Assignment assignment = new Assignment(literal, !literal.isNegated(), currentDecisionLevel, Assignment.AssignmentType.IMPLICATION);
     assignmentStack.push(assignment);
-    // Check if any clause becomes unsatisfiable
+    // Check if any clause becomes false
     for (Clause clause : getAllClauses()) {
         if (!clauseIsSatisfied(clause) && allLiteralsFalse(clause)) {
             //THIS IS A CONFLICTING ASSIGNMENT
              
-            if (verbose == true) System.out.println("This assignment causes a clause to becomes false " + assignmentStack.peek());
+            if (verbose == true) System.out.println("This assignment causes a clause to becomes false");
            
             //Add assignment as a conflict node to the implication graph
             implicationGraph.addConflictNode(assignment, unitClause);
@@ -299,8 +319,8 @@ private boolean allLiteralsFalse(Clause clause) {
             // Check if the assignment is related to any literal in the clause
             for (Literal literal : unitClause.getLiterals()) {
                 // The assignment must correspond to a literal in the clause and make it false
-                if (assignment.getLiteral().getVariable() == literal.getVariable() && 
-                    assignment.getValue() != literal.isNegated()) {
+                if (assignment.getLiteral().getVariable() == literal.getVariable()/*  && 
+                    assignment.getValue() != literal.isNegated()*/) {
                     antecedents.add(assignment);
                 }
             }
@@ -387,5 +407,15 @@ private boolean allLiteralsFalse(Clause clause) {
             }
         }
         return true; // all clauses are satisfied
-    }    
+    }  
+
+    private void printListOfLists(List<List<Node>> listOfLists) {
+        for (List<Node> nodeList : listOfLists) {
+            System.out.print("List of lists AKA PATHS: ");
+            for (Node node : nodeList) {
+                System.out.print(node.getAssignment().getLiteral() + " ");
+            }
+            System.out.println(); // Move to the next line for the next list
+        }
+    }
 }

@@ -7,6 +7,11 @@ public class Clause {
         literals.add(literal);
     }
 
+    //Add a literal to the start of the list
+    public void addLiteralToFront(Literal literal) {
+        literals.add(0, literal); 
+    }
+
     // Getters
     public List<Literal> getLiterals() {
         return literals;
