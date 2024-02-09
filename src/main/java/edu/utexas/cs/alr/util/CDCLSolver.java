@@ -51,30 +51,31 @@ public class CDCLSolver {
             if (!decisionMade) {    //No decision made, so its either satisfied currently, or it cant be satisfied
                 return isSatisfied();
             }
-
-            /* 
+ 
             //check if the decision caused a conflict
             Clause falseClause = getFalseClause();
             if (falseClause != null) {
                 implicationGraph.addConflictNode(assignmentStack.peek(), null, falseClause);
-                System.exit(1);
-            }
-            */
-            //Start the BCP process
-            Clause conflict = unitPropagation();    //if conflict encountered, returns a clause
-            if (conflict != null) {     //BCP lead to a conflict
-
-                if (currentDecisionLevel == 0) {
-                    return false; // Conflict at base level, so UNSAT
-                }
-                //Fix analyze conflict
                 Clause learnedClause = analyzeConflict();
-                //Fix backtrack
-                backtrack(learnedClause);
-                printAssignmentStack();
+            }
 
-            } else if (isSatisfied()) {
-                return true; // All variables assigned without conflict, so SAT
+            if (falseClause == null) {
+                //Start the BCP process
+                Clause conflict = unitPropagation();    //if conflict encountered, returns a clause
+                if (conflict != null) {     //BCP lead to a conflict
+
+                    if (currentDecisionLevel == 0) {
+                        return false; // Conflict at base level, so UNSAT
+                    }
+                    //Fix analyze conflict
+                    Clause learnedClause = analyzeConflict();
+                    //Fix backtrack
+                    backtrack(learnedClause);
+                    printAssignmentStack();
+
+                } else if (isSatisfied()) {
+                    return true; // All variables assigned without conflict, so SAT
+                }
             }
         }
     }

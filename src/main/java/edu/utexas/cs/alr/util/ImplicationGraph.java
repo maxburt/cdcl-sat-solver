@@ -103,17 +103,14 @@ public class ImplicationGraph {
         // Add the conflict node to nodes map
         // Note: the key to the map is NEGATIVE 1 for conflict node
         nodes.put(-1, conflictNode);
-
-        if (assignment.getType() != Assignment.AssignmentType.DECISION) {
-            // Handle the conflict's antecedents (clauses)
-            for (Literal literal : clause.getLiterals()) {
-                int variable = literal.getVariable();
-                Node antecedentNode = nodes.get(variable);
-                if (antecedentNode != null) {
-                    // Add the antecedent node to the list of antecedents
-                    conflictNode.addAntecedent(antecedentNode);
-                    antecedentNode.addImplication(conflictNode);
-                }
+        // Handle the conflict's antecedents (clauses)
+        for (Literal literal : clause.getLiterals()) {
+            int variable = literal.getVariable();
+            Node antecedentNode = nodes.get(variable);
+            if (antecedentNode != null) {
+                // Add the antecedent node to the list of antecedents
+                conflictNode.addAntecedent(antecedentNode);
+                antecedentNode.addImplication(conflictNode);
             }
         }
 
