@@ -81,43 +81,53 @@ public class ImplicationGraph {
     }
 
     //add conflicting assignment to the implication graph
-    public void addConflictNode(Assignment assignment, Clause clause) {
-        if (verbose == true) System.out.println("Adding conflict node  : " + assignment);
-        
-        Node conflictNode = new Node(assignment);
+    public void addConflictNode(Assignment assignment, List<Assignment> antecedents,  Clause clause) {
+        //The assignment passed in is causing a clause to become false. So we should add the assignment in the graph
+        //as an implication first, and then generate a conflict node
+        if (assignment.getType() == Assignment.AssignmentType.DECISION) {
+            //Assignment has already been added
+        } else {
+            this.addImplication(assignment, antecedents); 
+        }
+
+        if (verbose == true) {
+            System.out.println("This assignment caused a conflict node to be made");
+            System.out.print("False clause is ");
+            CNFConverter.printClause(clause);
+        }
+
+        //Conflict node now has NO assigment
+        Node conflictNode = new Node();
         conflictNode.markAsConflictNode();
     
         // Add the conflict node to nodes map
-        // Note: the key to the map is NEGATIVE for conflict node
-        nodes.put(assignment.getLiteral().getVariable()  * -1, conflictNode);
+        // Note: the key to the map is NEGATIVE 1 for conflict node
+        nodes.put(-1, conflictNode);
 
-        // Handle the conflict's antecedents (clauses)
-        for (Literal literal : clause.getLiterals()) {
-            int variable = literal.getVariable();
-            Node antecedentNode = nodes.get(variable);
-            if (antecedentNode != null) {
-                // Add the antecedent node to the list of antecedents
-                conflictNode.addAntecedent(antecedentNode);
-                antecedentNode.addImplication(conflictNode);
+        if (assignment.getType() != Assignment.AssignmentType.DECISION) {
+            // Handle the conflict's antecedents (clauses)
+            for (Literal literal : clause.getLiterals()) {
+                int variable = literal.getVariable();
+                Node antecedentNode = nodes.get(variable);
+                if (antecedentNode != null) {
+                    // Add the antecedent node to the list of antecedents
+                    conflictNode.addAntecedent(antecedentNode);
+                    antecedentNode.addImplication(conflictNode);
+                }
             }
         }
+
         if (verbose == true) {
+            System.out.print("Conflict node's antecedents are:  ");
             conflictNode.printAntecedents();
         }
-/* 
-        // Backtrack to the appropriate decision level
-        int toDecisionLevel = assignment.getDecisionLevel() - 1;
-        backtrack(toDecisionLevel);
-*/
     }
 
     public Node getConflictNode() {
-        // Iterate through the nodes in the map
-        for (Node node : nodes.values()) {
-            // Check if the node is marked as a conflict node
-            if (node.isConflictNode()) {
-                return node;
-            }
+        Node conflictNode = nodes.get(-1); // Assuming the conflict node is mapped to key -1
+
+        if (conflictNode.isConflictNode()) {
+            return conflictNode;
         }
         // If the conflict node is not found, return null or handle the case accordingly
         return null;
@@ -126,29 +136,10 @@ public class ImplicationGraph {
     //removes conflict node from graph,
     //used for testing code
     public void removeConflictNode() {
-        Node conflictNode = null;
-
-        // Iterate through the nodes in the map
-        Iterator<Map.Entry<Integer, Node>> iterator = nodes.entrySet().iterator();
-        
-        while (iterator.hasNext()) {
-            Map.Entry<Integer, Node> entry = iterator.next();
-            int variable = entry.getKey();
-            Node node = entry.getValue();
-
-            // Check if the node is marked as a conflict node
-            if (node.isConflictNode()) {
-                if (verbose) {
-                    System.out.println("Removing conflict node from graph");
-                }
-                conflictNode = node;
-                iterator.remove(); // Remove the conflict node from the map
-                break; // Exit the loop once the conflict node is found
-            }
-        }
+        Node conflictNode = nodes.remove(-1); 
 
         // Remove references to the conflict node from antecedent nodes' implications
-        if (conflictNode != null) {
+        if (conflictNode != null && conflictNode.isConflictNode()) {
             if (verbose) {
                 System.out.println("Removing implications from antecedents");
             }
@@ -188,48 +179,11 @@ public class ImplicationGraph {
         }
         return closestCommonNode;
     }
-    
-    
-    /*
-    // Finds the UIP (unique implication point)
-    // Takes as input all paths from last decision node to conflict node
-    public Node findClosestCommonNode(List<List<Node>> paths, Node conflictNode) {
-        // Create a counter map to keep track of how many times each node appears in the paths
-        Map<Node, Integer> nodeCounter = new HashMap<>();
-
-        // Iterate through each path and update the node counters, excluding the conflict node
-        for (List<Node> path : paths) {
-            for (int i = 0; i < path.size(); i++) {
-                Node node = path.get(i);
-            
-                // Exclude the conflict node from counting
-                if (node != conflictNode) {
-                    nodeCounter.put(node, nodeCounter.getOrDefault(node, 0) + 1);
-                }
-            }
-        }
-        // Find the node with the highest counter value
-        Node closestCommonNode = null;
-        int maxCount = 0;
-
-        for (Map.Entry<Node, Integer> entry : nodeCounter.entrySet()) {
-            Node node = entry.getKey();
-            int count = entry.getValue();
-
-            // If a node appears in all paths(has a count equal to the number of paths),
-            // it's the closest common node (UIP).
-            if (count == paths.size() && (closestCommonNode == null || count > maxCount)) {
-                closestCommonNode = node;
-                maxCount = count;
-            }
-        }
-
-        return closestCommonNode;
-    } 
-    */
 
     // Function to find all paths from the most recent decision node to the conflict node
     public List<List<Node>> findAllPathsFromDecisionToConflict(Node conflictNode) {
+        List<Node> conflictsAnts = conflictNode.getAntecedents();
+        
         List<List<Node>> allPaths = new ArrayList<>();
         Stack<Node> path = new Stack<>();
         Node decisionNode = decisionStack.peek();   // get most recent decision node
@@ -253,6 +207,7 @@ public class ImplicationGraph {
         } else {
             // Recursively explore all implications
             for (Node implication : currentNode.getImplications()) {
+                
                 dfsFromDecisionToConflict(implication, conflictNode, allPaths, path);
             }
         }
@@ -264,12 +219,9 @@ public class ImplicationGraph {
     /////////
 
     //The function for making learned clause 
-    public Clause createLearnedClause(Node UIP, Node conflictNode) {
-        
-        
+    public Clause createLearnedClause(Node UIP, Node conflictNode, Stack<Assignment> assignmentStack) {
         
         //Move Analyze conflict bulk of code to here
-         
 
         
         //Step 0, create a starting clause based on incoming nodes to conflict node
@@ -295,11 +247,12 @@ public class ImplicationGraph {
             }
             
             //Step 2: Pick most recently assigned literal in clause
-            Node mostRecent = getMostRecentAssignedLiteral(learnedClause); 
+            Node mostRecent = getMostRecentAssignedLiteral(learnedClause, assignmentStack); 
             if (mostRecent == null) {
                 System.err.println("Error getting most recently assigned literal from clause");
                 System.exit(1);
             }
+            if (verbose) System.out.println("Most recent literal is " + mostRecent.getAssignment());
 
             //Step 3: Create a clause that is implied by mostRecent and any antecedent of mostRecent
             Clause newClause = createImpliedClause(mostRecent);
@@ -342,7 +295,8 @@ public class ImplicationGraph {
                             resultClause.addLiteral(nonComplementaryLiteral2);
                         }
                     }
-                    // Return the result clause after resolution
+                    // Return the result clause after resolution and duplicate removal
+                    resultClause.removeDuplicates();
                     return resultClause;
                 }
             }
@@ -358,6 +312,13 @@ public class ImplicationGraph {
         //Get most recently assigned antecedent node
         Node mostRecentAntecedentNode = null;
         List<Node> antecedents = node.getAntecedents();
+        System.out.println("Node is " + node.getAssignment());
+        System.out.println("Last decision is " + decisionStack.peek().getAssignment());
+        System.out.println("Decision implies ");
+        decisionStack.peek().printImplications();
+        for (Node ant : antecedents) {
+            System.out.println("Ants is :" + ant.getAssignment());
+        }
         int decisionLevel = 0;
         for (Node antecedent : antecedents) {
             if (antecedent.getAssignment().getDecisionLevel() > decisionLevel) {
@@ -365,7 +326,6 @@ public class ImplicationGraph {
                 decisionLevel = antecedent.getAssignment().getDecisionLevel();         }
         }
         System.out.println("Most recent antecedent is " + mostRecentAntecedentNode.getAssignment());
-
         //Create new clause with current node literal,
         //and negated version of antecedent to create new implied clause
         Clause clause = new Clause();
@@ -380,32 +340,27 @@ public class ImplicationGraph {
         return clause;
     }
 
-    //Takes clause and returns literal that has been assigned most recently
-    private Node getMostRecentAssignedLiteral(Clause clause) {
+    //Returns the most recently assigned literal in a clause, based on the order of the assignment stack
+    private Node getMostRecentAssignedLiteral(Clause clause, Stack<Assignment> assignmentStack) {
         Literal mostRecentLiteral = null;
-        int mostRecentDecisionLevel = 0;
+        Node mostRecentNode = null;
     
         for (Literal literal : clause.getLiterals()) {
             // Find the assignment for the literal in the nodes map
             Node assignmentNode = findAssignmentForLiteral(literal);
     
-            if (assignmentNode != null) {
-                int decisionLevel = assignmentNode.getAssignment().getDecisionLevel();
-    
-                // Check if this assignment has a higher decision level
-                if (decisionLevel > mostRecentDecisionLevel) {
-                    mostRecentDecisionLevel = decisionLevel;
+            if (assignmentNode != null && assignmentStack.contains(assignmentNode.getAssignment())) {
+                // Check if this assignment comes after the current most recent one in the stack
+                if (mostRecentNode == null || assignmentStack.indexOf(assignmentNode.getAssignment()) > assignmentStack.indexOf(mostRecentNode.getAssignment())) {
+                    mostRecentNode = assignmentNode;
                     mostRecentLiteral = literal;
                 }
             }
-            else {
-                System.err.println("Error in getMostRecentAssignedLiteral function. Could not find assignment node for literal");
-                System.exit(1);
-            }
         }
-        //Note: returns node
-        return findAssignmentForLiteral(mostRecentLiteral);
+    
+        return mostRecentNode;
     }
+    
 
     //Generate starting clause for creating learned clause
     private Clause generateStartingClause(Node conflictNode) {
@@ -425,7 +380,6 @@ public class ImplicationGraph {
     //checks if clause is finished being learned,
     //if UIP is the only variable in the clause from the current decision level
     private Boolean isClauseLearned(Literal UIPLiteral, Clause clause) {
-        
         int UIPVariable = UIPLiteral.getVariable();  
         Boolean containsUIP = false;
         int currentDecisionLevel = decisionStack.peek().getAssignment().getDecisionLevel();
@@ -433,12 +387,10 @@ public class ImplicationGraph {
         int currentDecisionLevelLiteralCount = 0;
 
         for (Literal literal : literals) {
-
             //Check if UIP variable is present in the clause
             if (literal.getVariable() == UIPVariable) {
                 containsUIP = true;
             }
-
             Node literalNode = findAssignmentForLiteral(literal);
             if (literalNode == null) {
                 System.err.println("Couldn't find node for literal");
@@ -446,44 +398,32 @@ public class ImplicationGraph {
             }
             int literalDecisionLevel = literalNode.getAssignment().getDecisionLevel();
             // Check if the literal is from the current decision level
-            if (literalDecisionLevel == currentDecisionLevel) {
-                
+            if (literalDecisionLevel == currentDecisionLevel) { 
                 // Increment the count for literals from the current decision level
                 currentDecisionLevelLiteralCount++;
-
-                // If there is more than one literal from the current decision level, the clause is not learned
-                /* 
                 if (currentDecisionLevelLiteralCount > 1) {
                     return false;
                 }
-                */
             }
         }
-
-            if (/*currentDecisionLevelLiteralCount == 1  && */containsUIP) {
+            if (currentDecisionLevelLiteralCount == 1  && containsUIP) {
                 System.out.println("Created a new learned clause ");
                 CNFConverter.printClause(clause);
             }
-           
-            if (containsUIP) {
-                return true;
-            }
-            else {
-                return false;
-            }
             
-            //return currentDecisionLevelLiteralCount == 1 && containsUIP;
+            return currentDecisionLevelLiteralCount == 1 && containsUIP;
     }
 
     //helper function to take a literal, and find the corresponding node that Assigned it
     private Node findAssignmentForLiteral(Literal literal) {
         for (Node node : nodes.values()) {
             
-            Assignment assignment = node.getAssignment();
-            
-            if (assignment.getLiteral().getVariable() == literal.getVariable()) {
-                // Found a matching assignment
-                return node;
+            if (node.getAssignment() != null) {
+                Assignment assignment = node.getAssignment();
+                if (assignment.getLiteral().getVariable() == literal.getVariable()) {
+                    // Found a matching assignment
+                    return node;
+                }
             }
         }
         System.err.println("Could not find assignment node for literal");
@@ -499,7 +439,7 @@ public class ImplicationGraph {
     public int getSecondHighestDecisionLevel(Clause clause) {
         List<Literal> literals = clause.getLiterals();
 
-        //if size of clause is only 1, return 1 less than the single literals decision level
+        //if size of clause is only 1, return the only decision level - 1;
         if (literals.size() == 1) {
             int decisionLevel = getDecisionLevelForLiteral(literals.get(0)) - 1;
             return decisionLevel;
@@ -520,7 +460,7 @@ public class ImplicationGraph {
                 secondHighestDecisionLevel = decisionLevel;
             }
         }
-        if (secondHighestDecisionLevel == Integer.MIN_VALUE) {
+        if (secondHighestDecisionLevel == Integer.MIN_VALUE) { // second highest was never set
             return highestDecisionLevel - 1; 
         }
         return secondHighestDecisionLevel;
@@ -541,13 +481,16 @@ public class ImplicationGraph {
 }
 
     //Backtracks implication graph to decision level
-    public void backtrack(int toDecisionLevel) {
+    public void backtrack(int backtrackLevel) {
         
-        //for some reason this helped
+        //Start by removing the conflict node from the graph
         removeConflictNode();
-        
-        backtrackDecisionStack(toDecisionLevel);
-        removeNodesAboveDecisionLevel(toDecisionLevel);
+
+        //Remove all nodes with decision level above backtrackLevel
+        backtrackDecisionStack(backtrackLevel);
+
+        //Remove nodes from map, making sure to remove antecedents and implications
+        removeNodesAboveDecisionLevel(backtrackLevel);
     }
 
     private void backtrackDecisionStack(int backtrackLevel) {
@@ -562,7 +505,7 @@ public class ImplicationGraph {
         for (Node node : nodes.values()) {
             int nodeDecisionLevel = node.getAssignment().getDecisionLevel();
     
-            if (nodeDecisionLevel >= decisionLevelToRemove) {
+            if (nodeDecisionLevel > decisionLevelToRemove) {
                 // Mark the node for removal
                 nodesToRemove.add(node);
     
@@ -584,7 +527,12 @@ public class ImplicationGraph {
         for (List<Node> nodeList : listOfLists) {
             System.out.print("List of lists AKA PATHS: ");
             for (Node node : nodeList) {
-                System.out.print(node.getAssignment().getLiteral() + " ");
+                if (node.isConflictNode()) {
+                    System.out.print("Conflict node"); 
+                }
+                else {
+                    System.out.print(node.getAssignment().getLiteral() + " ");
+                }
             }
             System.out.println(); // Move to the next line for the next list
         }

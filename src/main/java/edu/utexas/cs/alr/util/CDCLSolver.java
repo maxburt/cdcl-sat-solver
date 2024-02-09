@@ -36,7 +36,14 @@ public class CDCLSolver {
     }
 
     // Main method to solve the SAT problem
-    public boolean solve() {
+    public boolean solve(){
+
+        
+        //Pre-step - Remove duplicate literals from each clause in list of clauses
+        for (Clause clause : clauses) {
+            clause.removeDuplicates();
+        }
+
         while (true) {
 
             //Checks learned clauses to see if they contain
@@ -52,22 +59,26 @@ public class CDCLSolver {
                 return isSatisfied();
             }
 
+            /* 
+            //check if the decision caused a conflict
+            Clause falseClause = getFalseClause();
+            if (falseClause != null) {
+                implicationGraph.addConflictNode(assignmentStack.peek(), null, falseClause);
+                System.exit(1);
+            }
+            */
             //Start the BCP process
             Clause conflict = unitPropagation();    //if conflict encountered, returns a clause
-
             if (conflict != null) {     //BCP lead to a conflict
-                if (verbose) System.out.println("Conflict detected");
 
                 if (currentDecisionLevel == 0) {
                     return false; // Conflict at base level, so UNSAT
                 }
-
+                //Fix analyze conflict
                 Clause learnedClause = analyzeConflict();
+                //Fix backtrack
                 backtrack(learnedClause);
-                System.out.println("Assignment stack :");
-                for (Assignment as : assignmentStack) {
-                    System.out.println("\t" + as);
-                }
+                printAssignmentStack();
 
             } else if (isSatisfied()) {
                 return true; // All variables assigned without conflict, so SAT
@@ -98,10 +109,7 @@ public class CDCLSolver {
                 value = !decisionLiteral.isNegated();
             }            
             
-            //////////
-            
             currentDecisionLevel++;
-            
             //Add new assignment to stack
             Assignment decision = new Assignment(decisionLiteral, value, currentDecisionLevel, Assignment.AssignmentType.DECISION);
             assignmentStack.push(decision);
@@ -125,6 +133,7 @@ public class CDCLSolver {
             changeMade = false;
 
             for (Clause clause : getAllClauses()) { //loop through all clauses, learned and original
+                
                 // skip satisfied clauses
                 if (clauseIsSatisfied(clause)) {
                     continue;
@@ -162,6 +171,7 @@ public class CDCLSolver {
             if (verbose) System.out.println("Got conflict node..."); 
 
             //Get all paths from last decision node to conflict node
+
             List<List<Node>> paths = implicationGraph.findAllPathsFromDecisionToConflict(conflictNode); 
             if (paths == null) {
                 System.err.println("Error last decision node to conflict node");
@@ -183,7 +193,7 @@ public class CDCLSolver {
         }
 
         //use the conflict node and UIP to create a new clause to add to the learnedClauses list
-        Clause learnedClause = implicationGraph.createLearnedClause(UIP, conflictNode);
+        Clause learnedClause = implicationGraph.createLearnedClause(UIP, conflictNode, assignmentStack);
         if (learnedClause != null) {
             //Add learned clause to learnedClause map
             learnedClauses.add(0, learnedClause);
@@ -202,12 +212,10 @@ public class CDCLSolver {
     //in the next decision step
     private void backtrack(Clause learnedClause) {
         int backtrackLevel = implicationGraph.getSecondHighestDecisionLevel(learnedClause);
-        
-        //RESET ALL VARIABLES TO BACKTRACKLEVEL
-        //added -1 because it will be incremented by makeDecision function
-        currentDecisionLevel = backtrackLevel - 1;
         System.out.println("Backtrack level is " + backtrackLevel);
-        System.out.println("Current decision level is now " + backtrackLevel);
+        currentDecisionLevel = backtrackLevel;
+
+        //Delete all nodes whose decision level is greater than backtrack level
         backtrackAssignmentList(backtrackLevel);
         implicationGraph.backtrack(backtrackLevel);
     }
@@ -220,7 +228,7 @@ public class CDCLSolver {
             Assignment assignment = iterator.next();
             int decisionLevel = assignment.getDecisionLevel();
             
-            if (decisionLevel >= backtrackLevel) {
+            if (decisionLevel > backtrackLevel) {
                 // Remove the assignment if its decision level is greater than backtrackLevel
                 iterator.remove();
             }
@@ -272,6 +280,7 @@ private boolean isConflict(Literal literal, Clause unitClause) {
 }
 
 //this function creates a temporary assignment of the literal to evaluate to true
+//if a confict is detected it adds a conflict node to the graph
 private boolean testAssignmentForConflict(Literal literal, Clause unitClause) {
     // Temporarily add the assignment
     Assignment assignment = new Assignment(literal, !literal.isNegated(), currentDecisionLevel, Assignment.AssignmentType.IMPLICATION);
@@ -279,14 +288,29 @@ private boolean testAssignmentForConflict(Literal literal, Clause unitClause) {
     // Check if any clause becomes false
     for (Clause clause : getAllClauses()) {
         if (!clauseIsSatisfied(clause) && allLiteralsFalse(clause)) {
-            //THIS IS A CONFLICTING ASSIGNMENT
-             
-            if (verbose == true) System.out.println("This assignment causes a clause to becomes false");
-           
-            //Add assignment as a conflict node to the implication graph
-            implicationGraph.addConflictNode(assignment, unitClause);
             
-            assignmentStack.pop(); // Revert the temporary assignment
+            //Keep the assignment
+            //assignmentStack.pop(); // Revert the temporary assignment
+            
+            //Get antecedents for 
+            List<Assignment> antecedents = findAntecedentsForUnitClause(unitClause);
+            //Remove literal in clause that corresponds to assigment
+
+            // Create an iterator for the antecedents list
+            Iterator<Assignment> iterator = antecedents.iterator();
+
+            // Remove literal in clause that corresponds to assignment
+            while (iterator.hasNext()) {
+                Assignment ant = iterator.next();
+                if (ant.getLiteral().equals(assignment.getLiteral())) {
+                    iterator.remove(); // Remove the assignment from the list
+                    break; // Exit the loop after the first removal
+                }
+            }
+            
+            //run addConflict
+            implicationGraph.addConflictNode(assignment, antecedents, clause);
+
             return true; // Conflict detected
         }
     }
@@ -471,5 +495,24 @@ private boolean allLiteralsFalse(Clause clause) {
             }
         }
         return false;
+    }
+
+    //For debugging, prints assignment stack
+    private void printAssignmentStack() {
+        System.out.println("Assignment stack is ....");
+        for (Assignment assignment : assignmentStack) {
+            System.out.println(assignment);
+        }
+    }
+
+    //Checks if assignment stack has falsified a clause
+    //for checking if decision node made a clause false
+    private Clause getFalseClause() {
+        for (Clause clause : getAllClauses()) {
+            if (allLiteralsFalse(clause)) {
+                return clause;
+            }
+        }
+        return null;
     }
 }

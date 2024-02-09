@@ -28,6 +28,13 @@ public class Node {
         this.isConflictNode = false;
     }
 
+    public Node() {
+        this.assignment = null;
+        this.antecedents = new ArrayList<>();
+        this.implications = new ArrayList<>(); 
+        this.isConflictNode = false;
+    }
+
     public void markAsConflictNode() {
         this.isConflictNode = true;
     }
@@ -69,9 +76,13 @@ public class Node {
     
     public void printImplications() {
         System.out.println("Implications for this node are ... ");
-        for (Node antecedent : antecedents) {
-            System.out.println("\t" + antecedent.assignment);
+        for (Node implication : implications) {
+            if (implication.isConflictNode()) {
+                System.out.println("\t" + "Conflict node"); 
+            }
+            else {
+                System.out.println("\t" + implication.assignment);
+            }
         }
     }
-
 }
