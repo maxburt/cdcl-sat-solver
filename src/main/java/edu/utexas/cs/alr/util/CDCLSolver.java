@@ -34,24 +34,23 @@ public class CDCLSolver {
         this.assignmentStack = new Stack<>();
         this.currentDecisionLevel = 0;
     }
-
     // Main method to solve the SAT problem
     public boolean solve(){
         while (true) {
-
             //Checks learned clauses to see if they contain
             //unit clauses and their negations
             if (hasContradictoryUnitClause(learnedClauses)) {
                 System.out.println("Has contradictory unit clauses in learned clause");
                 return false;
-            }
+            } 
             
+
             boolean decisionMade = makeDecision();
 
             if (!decisionMade) {    //No decision made, so its either satisfied currently, or it cant be satisfied
                 return isSatisfied();
             }
- 
+
             //check if the decision caused a conflict
             Clause falseClause = getFalseClause();
             if (falseClause != null) {
@@ -60,22 +59,32 @@ public class CDCLSolver {
             }
 
             if (falseClause == null) {
-                //Start the BCP process
-                Clause conflict = unitPropagation();    //if conflict encountered, returns a clause
-                if (conflict != null) {     //BCP lead to a conflict
+                Boolean foundConflict = false;
+                do {
+                    //Start the BCP process
+                    Clause conflict = unitPropagation();//if conflict encountered, returns a clause
+                    if (conflict != null) {     //BCP lead to a conflict
+                        foundConflict = true;
+                        if (currentDecisionLevel <= 0) {
+                            return false; // Conflict at base level, so UNSAT
+                        }
+                        //Analyze conflict to create learned clause
+                        Clause learnedClause = analyzeConflict();
+                        backtrack(learnedClause);
+                        if (currentDecisionLevel <= 0) {
+                            return false; // Learned clause must have been unary so UNSAT
+                        }
+                        
+                        //For debugging
+                        printAssignmentStack();
 
-                    if (currentDecisionLevel == 0) {
-                        return false; // Conflict at base level, so UNSAT
-                    }
-                    //Fix analyze conflict
-                    Clause learnedClause = analyzeConflict();
-                    //Fix backtrack
-                    backtrack(learnedClause);
-                    printAssignmentStack();
-
-                } else if (isSatisfied()) {
-                    return true; // All variables assigned without conflict, so SAT
-                }
+                    }else {
+                        foundConflict = false;
+                        if (isSatisfied()) {
+                            return true; // All variables assigned without conflict, so SAT
+                        }
+                    }  
+                } while (foundConflict == true);
             }
         }
     }
@@ -208,7 +217,6 @@ public class CDCLSolver {
         int backtrackLevel = implicationGraph.getSecondHighestDecisionLevel(learnedClause);
         System.out.println("Backtrack level is " + backtrackLevel);
         currentDecisionLevel = backtrackLevel;
-
         //Delete all nodes whose decision level is greater than backtrack level
         backtrackAssignmentList(backtrackLevel);
         implicationGraph.backtrack(backtrackLevel);
