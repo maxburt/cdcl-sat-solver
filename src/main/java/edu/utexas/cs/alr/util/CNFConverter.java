@@ -9,7 +9,17 @@ public class CNFConverter {
     //main function to convert formula to list of Clauses
     public static List<Clause> convertToClauses(Expr expr) {
         List<Clause> clauses = new ArrayList<>();
+        
+        //Converts expression to a list of clause objects
         extractClauses(expr, clauses);
+        
+        //Remove duplicate literals from each clause in list of clauses
+        for (Clause clause : clauses) {
+            clause.removeDuplicates();
+        }
+
+        //Removes clauses that contain x v !x, for all x. Tautology
+        removeContradictoryClauses(clauses);
         return clauses;
     }
 
@@ -75,6 +85,31 @@ public class CNFConverter {
         } else if (expr instanceof VarExpr) {
             VarExpr varExpr = (VarExpr) expr;
             clause.addLiteral(new Literal((int) varExpr.getId(), false));
+        }
+    }
+
+    public static void removeContradictoryClauses(List<Clause> clauses) {
+        // Iterate over each clause in the list
+        for (int i = 0; i < clauses.size(); i++) {
+            Clause clause = clauses.get(i);
+            boolean containsContradiction = false;
+
+            // Check each literal in the current clause
+            for (Literal literal : clause.getLiterals()) {
+                Literal oppositeLiteral = new Literal(literal.getVariable(), !literal.isNegated());
+
+                // If the clause contains the opposite of the current literal, mark it for removal
+                if (clause.containsLiteralExactly(oppositeLiteral)) {
+                    containsContradiction = true;
+                    break;
+                }
+            }
+
+            // If the clause contains a contradiction, remove it from the list
+            if (containsContradiction) {
+                clauses.remove(i);
+                i--; // Decrement index to account for removed element
+            }
         }
     }
 }

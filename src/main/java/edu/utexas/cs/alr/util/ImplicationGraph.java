@@ -120,6 +120,12 @@ public class ImplicationGraph {
         if (verbose == true) {
             System.out.print("Conflict node's antecedents are:  ");
             conflictNode.printAntecedents();
+            /*if (conflictNode.getAntecedents().get(0).getAssignment().getLiteral().getVariable() == 327)
+            {   Set<Node> visited = new HashSet<>();
+                printAntecedentsRecursive(conflictNode, visited);
+                System.exit(1);
+            }
+            */
         }
     }
 
@@ -200,14 +206,15 @@ public class ImplicationGraph {
     private void dfsFromDecisionToConflict(Node currentNode, Node conflictNode, List<List<Node>> allPaths, Stack<Node> path) {
         // Push the current node onto the path stack
         path.push(currentNode);        
+        System.out.println("pushing " + currentNode.getAssignment());
         // If the current node is the conflict node, add the path to allPaths
         if (currentNode == conflictNode) {
-
+            System.out.println("Found path");
             allPaths.add(new ArrayList<>(path));
         } else {
             // Recursively explore all implications
             for (Node implication : currentNode.getImplications()) {
-                
+                System.out.println("Searching implication " + implication.getAssignment());
                 dfsFromDecisionToConflict(implication, conflictNode, allPaths, path);
             }
         }
@@ -215,6 +222,7 @@ public class ImplicationGraph {
         // Pop the current node from the path stack to backtrack
 
         Node popNode = path.pop();
+        System.out.println("Popping " + popNode.getAssignment());
     }
     /////////
 
@@ -535,6 +543,27 @@ public class ImplicationGraph {
                 }
             }
             System.out.println(); // Move to the next line for the next list
+        }
+    }
+
+    public void printAntecedentsRecursive(Node node, Set<Node> visited) {
+        // Base case: if the node has been visited before, return
+        if (visited.contains(node)) {
+            return;
+        }
+        
+        // Print the current node
+        System.out.println("Node: " + node.getAssignment());
+        
+        // Add the current node to the set of visited nodes
+        visited.add(node);
+        
+        // Print antecedents of the current node
+        System.out.println("Antecedents:");
+        for (Node antecedent : node.getAntecedents()) {
+            System.out.println("\t" + antecedent.getAssignment());
+            // Recursively print antecedents of the current antecedent
+            printAntecedentsRecursive(antecedent, visited);
         }
     }
     

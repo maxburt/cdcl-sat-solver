@@ -37,13 +37,6 @@ public class CDCLSolver {
 
     // Main method to solve the SAT problem
     public boolean solve(){
-
-        
-        //Pre-step - Remove duplicate literals from each clause in list of clauses
-        for (Clause clause : clauses) {
-            clause.removeDuplicates();
-        }
-
         while (true) {
 
             //Checks learned clauses to see if they contain

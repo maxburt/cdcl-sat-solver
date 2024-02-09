@@ -28,7 +28,6 @@ public class SatUtil {
        
         //printing out the clauses for reference
         CNFConverter.printClauses(solver.clauses);
-       
         return solver.solve();
 
     }
