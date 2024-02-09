@@ -445,9 +445,9 @@ public class ImplicationGraph {
     public int getSecondHighestDecisionLevel(Clause clause) {
         List<Literal> literals = clause.getLiterals();
 
-        //if size of clause is only 1, return -1, and formula is unsat
+        //if size of clause is only 1, return the only decision level - 1;
         if (literals.size() == 1) {
-            int decisionLevel = -1;
+            int decisionLevel = getDecisionLevelForLiteral(literals.get(0)) - 1;
             return decisionLevel;
         }
         int highestDecisionLevel = Integer.MIN_VALUE;
@@ -537,7 +537,7 @@ public class ImplicationGraph {
                     System.out.print("Conflict node"); 
                 }
                 else {
-                    System.out.print(node.getAssignment().getLiteral() + " " + node.getAssignment().getDecisionLevel() + " | ");
+                    System.out.print(node.getAssignment().getLiteral() + " ");
                 }
             }
             System.out.println(); // Move to the next line for the next list
