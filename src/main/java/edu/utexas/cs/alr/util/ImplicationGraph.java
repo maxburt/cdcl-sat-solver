@@ -21,7 +21,7 @@ public class ImplicationGraph {
     public Stack<Node> decisionStack; // To track decision levels
 
     public ImplicationGraph() {
-        this.verbose = true;
+        this.verbose = false;
         this.nodes = new HashMap<>();
         this.decisionStack = new Stack<>();
     }
@@ -203,15 +203,15 @@ public class ImplicationGraph {
     private void dfsFromDecisionToConflict(Node currentNode, Node conflictNode, List<List<Node>> allPaths, Stack<Node> path) {
         // Push the current node onto the path stack
         path.push(currentNode);        
-        System.out.println("pushing " + currentNode.getAssignment());
+        if (verbose) System.out.println("pushing " + currentNode.getAssignment());
         // If the current node is the conflict node, add the path to allPaths
         if (currentNode == conflictNode) {
-            System.out.println("Found path");
+            if (verbose) System.out.println("Found path");
             allPaths.add(new ArrayList<>(path));
         } else {
             // Recursively explore all implications
             for (Node implication : currentNode.getImplications()) {
-                System.out.println("Searching implication " + implication.getAssignment());
+                if (verbose) System.out.println("Searching implication " + implication.getAssignment());
                 dfsFromDecisionToConflict(implication, conflictNode, allPaths, path);
             }
         }
@@ -219,7 +219,7 @@ public class ImplicationGraph {
         // Pop the current node from the path stack to backtrack
 
         Node popNode = path.pop();
-        System.out.println("Popping " + popNode.getAssignment());
+        if (verbose) System.out.println("Popping " + popNode.getAssignment());
     }
     /////////
 
@@ -253,7 +253,6 @@ public class ImplicationGraph {
             
             //Step 2: Pick most recently assigned literal in clause
             Node mostRecent = getMostRecentAssignedLiteral(learnedClause, assignmentStack); 
-            System.out.println();
             if (mostRecent == null) {
                 System.err.println("Error getting most recently assigned literal from clause");
                 System.exit(1);
@@ -318,12 +317,14 @@ public class ImplicationGraph {
         //Get most recently assigned antecedent node
         Node mostRecentAntecedentNode = null;
         List<Node> antecedents = node.getAntecedents();
-        System.out.println("Node is " + node.getAssignment());
-        System.out.println("Last decision is " + decisionStack.peek().getAssignment());
-        System.out.println("Decision implies ");
-        decisionStack.peek().printImplications();
-        for (Node ant : antecedents) {
-            System.out.println("Ants is :" + ant.getAssignment());
+        if (verbose) {
+            System.out.println("Node is " + node.getAssignment());
+            System.out.println("Last decision is " + decisionStack.peek().getAssignment());
+            System.out.println("Decision implies ");
+            decisionStack.peek().printImplications();
+            for (Node ant : antecedents) {
+                System.out.println("Ants is :" + ant.getAssignment());
+            }
         }
         int decisionLevel = 0;
         for (Node antecedent : antecedents) {
@@ -331,7 +332,7 @@ public class ImplicationGraph {
                 mostRecentAntecedentNode = antecedent;
                 decisionLevel = antecedent.getAssignment().getDecisionLevel();         }
         }
-        System.out.println("Most recent antecedent is " + mostRecentAntecedentNode.getAssignment());
+        if (verbose) System.out.println("Most recent antecedent is " + mostRecentAntecedentNode.getAssignment());
         //Create new clause with current node literal,
         //and negated version of antecedent to create new implied clause
         Clause clause = new Clause();
@@ -339,10 +340,10 @@ public class ImplicationGraph {
         clause.addLiteralToFront(mostRecentAntecedentNode.getAssignment().getLiteral().negate());
         
         
-        System.out.print("Implied clause is " );
-        CNFConverter.printClause(clause);
-        //System.out.println("Triggered");
-        
+        if (verbose){
+            System.out.print("Implied clause is " );
+            CNFConverter.printClause(clause);
+        }
         return clause;
     }
 
@@ -412,7 +413,7 @@ public class ImplicationGraph {
                 }
             }
         }
-            if (currentDecisionLevelLiteralCount == 1  && containsUIP) {
+            if (currentDecisionLevelLiteralCount == 1  && containsUIP && verbose) {
                 System.out.println("Created a new learned clause ");
                 CNFConverter.printClause(clause);
             }
@@ -441,13 +442,14 @@ public class ImplicationGraph {
         return literal1.getVariable() == literal2.getVariable() && literal1.isNegated() != literal2.isNegated();
     }
 
-    //Helper function for backtracking to second highest decision level in a clause
+    //Helper function for backtracking to second highest decision level in a learned conflict clause
     public int getSecondHighestDecisionLevel(Clause clause) {
         List<Literal> literals = clause.getLiterals();
 
         //if size of clause is only 1, return -1, and formula is unsat
         if (literals.size() == 1) {
-            int decisionLevel = -1;
+            if (decisionStack.size() == 0) return -1;
+            int decisionLevel = 0;
             return decisionLevel;
         }
         int highestDecisionLevel = Integer.MIN_VALUE;
@@ -466,8 +468,8 @@ public class ImplicationGraph {
                 secondHighestDecisionLevel = decisionLevel;
             }
         }
-        if (secondHighestDecisionLevel == Integer.MIN_VALUE) { // second highest was never set
-            return highestDecisionLevel - 1; 
+        if (secondHighestDecisionLevel == Integer.MIN_VALUE) { // which means all literals are same
+            return 0; 
         }
         return secondHighestDecisionLevel;
     }

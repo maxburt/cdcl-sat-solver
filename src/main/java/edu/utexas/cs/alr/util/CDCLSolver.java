@@ -27,7 +27,7 @@ public class CDCLSolver {
 
     //Constructor
     public CDCLSolver(List<Clause> clauses) {
-        this.verbose = true;
+        this.verbose = false;
         this.clauses = clauses;
         this.learnedClauses = new ArrayList<>();
         this.implicationGraph = new ImplicationGraph();
@@ -71,12 +71,12 @@ public class CDCLSolver {
                         //Analyze conflict to create learned clause
                         Clause learnedClause = analyzeConflict();
                         backtrack(learnedClause);
-                        if (currentDecisionLevel <= 0) {
-                            return false; // Learned clause must have been unary so UNSAT
+                        if (currentDecisionLevel < 0) {
+                            return false; 
                         }
                         
                         //For debugging
-                        printAssignmentStack();
+                        if (verbose) printAssignmentStack();
 
                     }else {
                         foundConflict = false;
@@ -132,17 +132,16 @@ public class CDCLSolver {
     //in which a conflict is occuring
     private Clause unitPropagation() {   
         boolean changeMade;
-        do {
-            changeMade = false;
-
-            for (Clause clause : getAllClauses()) { //loop through all clauses, learned and original
-                
+        int idx = 0;
+            while (idx < getAllClauses().size()) { //loop through all clauses, learned and original
+                Clause clause = getAllClauses().get(idx);
+                idx++;
                 // skip satisfied clauses
+
                 if (clauseIsSatisfied(clause)) {
                     continue;
                 }             
 
-                //what makes a clause a unit clause
                 if (isUnitClause(clause)) { //clause is an unsatisfied unit clause
                     Literal unitLiteral = getUnassignedLiteral(clause);
                     //check if assigning the unitLiteral would cause a conflict
@@ -152,12 +151,10 @@ public class CDCLSolver {
                     
                     //perform unit propogation on the other clauses
                     propagate(unitLiteral, clause);
-                    
+                    idx = 0;
                     changeMade = true;
                 }
             }
-        } while (changeMade); //if a change has been made, start the loop again
-
     return null; // No conflicts detected
     }
 
@@ -215,7 +212,7 @@ public class CDCLSolver {
     //in the next decision step
     private void backtrack(Clause learnedClause) {
         int backtrackLevel = implicationGraph.getSecondHighestDecisionLevel(learnedClause);
-        System.out.println("Backtrack level is " + backtrackLevel);
+        if (verbose) System.out.println("Backtrack level is " + backtrackLevel);
         currentDecisionLevel = backtrackLevel;
         //Delete all nodes whose decision level is greater than backtrack level
         backtrackAssignmentList(backtrackLevel);
@@ -334,9 +331,9 @@ private boolean allLiteralsFalse(Clause clause) {
     return true;
 }
 
-    //this function assigns unitLiteral to make it evaluate true
-    //i.e. if unit clause is !x, it assigns x to false
-    //if unit clause is x, it assigns x to true
+
+
+    //This function assigns a unit literal to make it evaluate to true
     private void propagate(Literal unitLiteral, Clause unitClause) {
         
         boolean value = !unitLiteral.isNegated();
