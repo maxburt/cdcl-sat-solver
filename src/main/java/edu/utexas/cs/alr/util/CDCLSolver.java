@@ -79,7 +79,7 @@ public class CDCLSolver {
                         //For debugging
                         if (verbose) printAssignmentStack();
 
-                    }else {
+                    } else {
                         foundConflict = false;
                         if (isSatisfied()) {
                             return true; // All variables assigned without conflict, so SAT
