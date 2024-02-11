@@ -94,7 +94,7 @@ public class ImplicationGraph {
         }
         */
         /////
-        impliedNode.printAntecedents();
+        if (verbose) impliedNode.printAntecedents();
     }
 
     //used for testing

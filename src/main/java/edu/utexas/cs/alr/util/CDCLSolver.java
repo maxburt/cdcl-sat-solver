@@ -42,7 +42,7 @@ public class CDCLSolver {
             //Checks learned clauses to see if they contain
             //unit clauses and their negations
             if (hasContradictoryUnitClause(learnedClauses)) {
-                System.out.println("Has contradictory unit clauses in learned clause");
+                if (verbose) System.out.println("Has contradictory unit clauses in learned clause");
                 return false;
             }
             
@@ -141,14 +141,10 @@ public class CDCLSolver {
                 }             
 
                 if (isUnitClause(clause)) { //clause is an unsatisfied unit clause
-                    System.out.println(idx);
                     idx++;
 
 
                     Literal unitLiteral = getUnassignedLiteral(clause);
-                    System.out.println("Unit literal is " + unitLiteral);
-                    System.out.print("Clause is ");
-                    CNFConverter.printClause(clause);
                     
                     //check if assigning the unitLiteral would cause a conflict
                     if (unitLiteral == null || isConflict(unitLiteral, clause)) {
@@ -351,7 +347,6 @@ private boolean allLiteralsFalse(Clause clause) {
         // this function searches assignment stack and finds the assignments that forced
         // the assigment in the unit clause
         List<Assignment> antecedents = findAntecedentsForUnitClause(unitClause);
-        CNFConverter.printClause(unitClause);
         // Add the implication to the implication graph with its antecedents
         implicationGraph.addImplication(impliedAssignment, antecedents, unitClause);
 
