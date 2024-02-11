@@ -23,7 +23,7 @@ import static edu.utexas.cs.alr.util.ExprWalker.dfsWalk;
 //for backtracking and creating the conflic clauses effectively.
 class Assignment {
     private final Literal literal; // The literal being assigned
-    private final boolean value; // The assigned truth value (true or false)
+    private boolean value; // The assigned truth value (true or false)
     private final int decisionLevel; // The decision level at which the assignment was made
     private final AssignmentType type; // Enum to indicate decision or implication
     
@@ -62,6 +62,9 @@ class Assignment {
     public enum AssignmentType {
         DECISION,
         IMPLICATION
+    }
+    public void setValue(Boolean val) {
+        this.value = val;
     }
 
     @Override

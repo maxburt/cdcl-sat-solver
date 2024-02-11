@@ -2,6 +2,30 @@ package edu.utexas.cs.alr.util;
 import java.util.*;
 public class Clause {
     private final List<Literal> literals = new ArrayList<>();
+    private Literal watchLiteral1;
+    private Literal watchLiteral2;
+
+    public Clause() {
+        watchLiteral1 = null;
+        watchLiteral2 = null;
+    }
+
+    public void initWatchLiterals(){
+        if (literals.get(0) != null) this.watchLiteral1 = literals.get(0);
+        if (literals.get(1) != null) this.watchLiteral2 = literals.get(1);
+    }
+
+    public Literal getWatchLiteral1() {
+        return watchLiteral1;
+    }
+
+    public Literal getWatchLiteral2() {
+        return watchLiteral2;
+    }
+    //Check current state of clause and update watch literals
+    public void updateWatchLiterals(Stack<Assignment> assignmentStack) {
+
+    }
 
     public void addLiteral(Literal literal) {
         literals.add(literal);
