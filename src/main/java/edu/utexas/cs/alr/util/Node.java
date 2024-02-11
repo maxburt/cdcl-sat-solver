@@ -68,7 +68,7 @@ public class Node {
     }
 
     public void printAntecedents() {
-        System.out.println("Antecedents for this node are ... ");
+        System.out.println("\tAntecedents for this node are ... ");
         for (Node antecedent : antecedents) {
             System.out.println("\t" + antecedent.assignment);
         }

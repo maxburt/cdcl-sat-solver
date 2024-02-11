@@ -44,13 +44,38 @@ public class ImplicationGraph {
     //function to add an implied node to the implication graph 
     //takes as input the assignment that was just implied via BCP, as well as the list of
     //other previous assignments that forced this assignment (antecedents)
-    public void addImplication(Assignment implied, List<Assignment> antecedents) {
-        if (verbose == true) System.out.println("Adding implication node :  " + implied);
-        //if (verbose == true) System.out.println("\tAntecedents passed in : " + antecedents.size());
-        
+    public void addImplication(Assignment implied, List<Assignment> antecedents, Clause clause) {
+        /* 
+        if (verbose == true) {
+            System.out.print("\tAntecedents passed in : " + antecedents.size() + ":  " );
+            for (Assignment ant : antecedents) {
+                System.out.print(ant.getLiteral() + " ");
+            }
+            System.out.println();
+        }
+        */
+        Literal clauseLiteral = getUnassignedLiteral(clause);
+        implied.setValue(!clauseLiteral.isNegated());
+
+        List<Node> antecedents1 = findAntecedentsForImplication(clause);
         //adds a new node object to nodes map
         Node impliedNode = nodes.computeIfAbsent(implied.getLiteral().getVariable(), k -> new Node(implied));
         
+        for (Node antecedent : antecedents1) {
+            impliedNode.addAntecedent(antecedent);
+            antecedent.addImplication(impliedNode);
+        }
+
+        if (verbose == true){
+            System.out.print("Adding implication node :  " + implied + " from clause ");
+            CNFConverter.printClause(clause);
+            if (implied.getLiteral().getVariable() == 175) {
+                System.exit(1);
+            }
+        }
+        
+        //Find antecedent nodes for clause
+        /*
         //loop through all antecedent assignments that were passed in
         for (Assignment antecedent : antecedents) {
 
@@ -66,6 +91,9 @@ public class ImplicationGraph {
                 System.exit(1);
             }
         }
+        */
+        /////
+        impliedNode.printAntecedents();
     }
 
     //used for testing
@@ -87,7 +115,7 @@ public class ImplicationGraph {
         if (assignment.getType() == Assignment.AssignmentType.DECISION) {
             //Assignment has already been added
         } else {
-            this.addImplication(assignment, antecedents); 
+            this.addImplication(assignment, antecedents, clause); 
         }
 
         if (verbose == true) {
@@ -363,6 +391,10 @@ public class ImplicationGraph {
                     mostRecentLiteral = literal;
                 }
             }
+            else {
+                System.err.println("Error finding most recent assigned literal");
+                System.exit(1);
+            }
         }
     
         return mostRecentNode;
@@ -446,7 +478,7 @@ public class ImplicationGraph {
     public int getSecondHighestDecisionLevel(Clause clause) {
         List<Literal> literals = clause.getLiterals();
 
-        //if size of clause is only 1, return -1, and formula is unsat
+        //if size of clause is only 1, return the only decision level - 1;
         if (literals.size() == 1) {
             if (decisionStack.size() == 0) return -1;
             int decisionLevel = 0;
@@ -539,7 +571,7 @@ public class ImplicationGraph {
                     System.out.print("Conflict node"); 
                 }
                 else {
-                    System.out.print(node.getAssignment().getLiteral() + " " + node.getAssignment().getDecisionLevel() + " | ");
+                    System.out.print(node.getAssignment().getLiteral() + " ");
                 }
             }
             System.out.println(); // Move to the next line for the next list
@@ -566,5 +598,27 @@ public class ImplicationGraph {
             printAntecedentsRecursive(antecedent, visited);
         }
     }
+
+    public List<Node> findAntecedentsForImplication(Clause clause) {
+        List<Node> antecedents = new ArrayList<>();
     
+        // Iterate through the literals in the clause
+        for (Literal literal : clause.getLiterals()) {
+            // Check if the literal has been assigned
+            if (nodes.containsKey(literal.getVariable())) {
+                // Add the corresponding node to the list
+                antecedents.add(nodes.get(literal.getVariable()));
+            }
+        }
+        return antecedents;
+    }
+
+    public Literal getUnassignedLiteral(Clause clause) {
+        for (Literal l : clause.getLiterals()) {
+            if (!nodes.containsKey(l.getVariable())) {
+                return l;
+            }
+        }
+        return null;
+    }
 }
