@@ -34,24 +34,23 @@ public class CDCLSolver {
         this.assignmentStack = new Stack<>();
         this.currentDecisionLevel = 0;
     }
-
     // Main method to solve the SAT problem
     public boolean solve(){
         while (true) {
-
             //Checks learned clauses to see if they contain
             //unit clauses and their negations
             if (hasContradictoryUnitClause(learnedClauses)) {
-                if (verbose) System.out.println("Has contradictory unit clauses in learned clause");
+                System.out.println("Has contradictory unit clauses in learned clause");
                 return false;
-            }
+            } 
             
+
             boolean decisionMade = makeDecision();
 
             if (!decisionMade) {    //No decision made, so its either satisfied currently, or it cant be satisfied
                 return isSatisfied();
             }
- 
+
             //check if the decision caused a conflict
             Clause falseClause = getFalseClause();
             if (falseClause != null) {
@@ -79,7 +78,7 @@ public class CDCLSolver {
                         //For debugging
                         if (verbose) printAssignmentStack();
 
-                    } else {
+                    }else {
                         foundConflict = false;
                         if (isSatisfied()) {
                             return true; // All variables assigned without conflict, so SAT
@@ -91,17 +90,17 @@ public class CDCLSolver {
     }
 
     //currently finds first unassigned literal from first unsatisfied clause
-    private boolean makeDecision() {  
-        Literal decisionLiteral = findLiteralThatSatisfiesMostUnsatisfiedClauses(getAllClauses());
-        /*Literal decisionLiteral = findUnassignedLiteralFromUnsatisfiedClauses(learnedClauses);
+    private boolean makeDecision() {
+
+        //look for first unassigned literal in the first unsatisfied clause of learned clauses
+        Literal decisionLiteral = findUnassignedLiteralFromUnsatisfiedClauses(learnedClauses);
 
         if (decisionLiteral == null) {
             
             // If no suitable literal is found in learned clauses, check original clauses
             decisionLiteral = findUnassignedLiteralFromUnsatisfiedClauses(clauses);
         }
-        */
-        
+
         if (decisionLiteral != null) {
             //Check if a satisfying decision would
             //falsify a unit clause in the learnedClauses and clauses list
@@ -144,16 +143,12 @@ public class CDCLSolver {
                 }             
 
                 if (isUnitClause(clause)) { //clause is an unsatisfied unit clause
-                    idx++;
-
-
                     Literal unitLiteral = getUnassignedLiteral(clause);
-                    
                     //check if assigning the unitLiteral would cause a conflict
                     if (unitLiteral == null || isConflict(unitLiteral, clause)) {
                         return clause; // Conflict conflict clause
                     }
-
+                    
                     //perform unit propogation on the other clauses
                     propagate(unitLiteral, clause);
                     idx = 0;
@@ -219,7 +214,6 @@ public class CDCLSolver {
         int backtrackLevel = implicationGraph.getSecondHighestDecisionLevel(learnedClause);
         if (verbose) System.out.println("Backtrack level is " + backtrackLevel);
         currentDecisionLevel = backtrackLevel;
-
         //Delete all nodes whose decision level is greater than backtrack level
         backtrackAssignmentList(backtrackLevel);
         implicationGraph.backtrack(backtrackLevel);
@@ -341,7 +335,7 @@ private boolean allLiteralsFalse(Clause clause) {
 
     //This function assigns a unit literal to make it evaluate to true
     private void propagate(Literal unitLiteral, Clause unitClause) {
-
+        
         boolean value = !unitLiteral.isNegated();
     
         Assignment impliedAssignment = new Assignment(unitLiteral, value, currentDecisionLevel, Assignment.AssignmentType.IMPLICATION);
@@ -350,9 +344,10 @@ private boolean allLiteralsFalse(Clause clause) {
         // this function searches assignment stack and finds the assignments that forced
         // the assigment in the unit clause
         List<Assignment> antecedents = findAntecedentsForUnitClause(unitClause);
+    
         // Add the implication to the implication graph with its antecedents
-        implicationGraph.addImplication(impliedAssignment, antecedents, unitClause);
-
+        implicationGraph.addImplication(impliedAssignment, antecedents);
+    
         // Push the implied assignment onto the assignment stack
         assignmentStack.push(impliedAssignment);
     }
@@ -363,14 +358,13 @@ private boolean allLiteralsFalse(Clause clause) {
     //and looks through Assignment stack to find all Assignments that forced
     //the unit clause to exist
     private List<Assignment> findAntecedentsForUnitClause(Clause unitClause) {
-        
         List<Assignment> antecedents = new ArrayList<>();
         // Iterate through the assignment stack to find assignments that made the other literals false
         for (Assignment assignment : assignmentStack) {
             // Check if the assignment is related to any literal in the clause
             for (Literal literal : unitClause.getLiterals()) {
                 // The assignment must correspond to a literal in the clause and make it false
-                if (assignment.getLiteral().getVariable() == literal.getVariable() /*  && 
+                if (assignment.getLiteral().getVariable() == literal.getVariable()/*  && 
                     assignment.getValue() != literal.isNegated()*/) {
                     antecedents.add(assignment);
                 }
@@ -519,39 +513,5 @@ private boolean allLiteralsFalse(Clause clause) {
             }
         }
         return null;
-    }
-
-    public Literal findLiteralThatSatisfiesMostUnsatisfiedClauses(List<Clause> clauses) {
-        Map<Literal, Integer> literalCounts = new HashMap<>();
-    
-        // Count how many times each literal appears in unsatisfied clauses
-        for (Clause clause : clauses) {
-            if (!clauseIsSatisfied(clause)) {
-                for (Literal literal : clause.getLiterals()) {
-                    // Skip literals that are already assigned
-                    if (literalIsAssigned(literal)) {
-                        continue;
-                    }
-                    // Increment count for the literal
-                    literalCounts.put(literal, literalCounts.getOrDefault(literal, 0) + 1);
-                }
-            }
-        }
-    
-        // Find the literal that satisfies the most unsatisfied clauses
-        Literal mostSatisfyingLiteral = null;
-        int maxSatisfactionCount = -1;
-    
-        for (Map.Entry<Literal, Integer> entry : literalCounts.entrySet()) {
-            Literal literal = entry.getKey();
-            int count = entry.getValue();
-    
-            if (count > maxSatisfactionCount) {
-                mostSatisfyingLiteral = literal;
-                maxSatisfactionCount = count;
-            }
-        }
-    
-        return mostSatisfyingLiteral;
     }
 }
