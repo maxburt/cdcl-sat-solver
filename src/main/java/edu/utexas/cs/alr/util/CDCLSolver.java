@@ -92,13 +92,16 @@ public class CDCLSolver {
 
     //currently finds first unassigned literal from first unsatisfied clause
     private boolean makeDecision() {  
-        Literal decisionLiteral = findUnassignedLiteralFromUnsatisfiedClauses(learnedClauses);
+        Literal decisionLiteral = findLiteralThatSatisfiesMostUnsatisfiedClauses(getAllClauses());
+        /*Literal decisionLiteral = findUnassignedLiteralFromUnsatisfiedClauses(learnedClauses);
 
         if (decisionLiteral == null) {
             
             // If no suitable literal is found in learned clauses, check original clauses
             decisionLiteral = findUnassignedLiteralFromUnsatisfiedClauses(clauses);
         }
+        */
+        
         if (decisionLiteral != null) {
             //Check if a satisfying decision would
             //falsify a unit clause in the learnedClauses and clauses list
