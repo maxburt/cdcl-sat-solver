@@ -21,7 +21,7 @@ public class ImplicationGraph {
     public Stack<Node> decisionStack; // To track decision levels
 
     public ImplicationGraph() {
-        this.verbose = true;
+        this.verbose = false;
         this.nodes = new HashMap<>();
         this.decisionStack = new Stack<>();
     }

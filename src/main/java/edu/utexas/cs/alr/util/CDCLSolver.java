@@ -27,7 +27,7 @@ public class CDCLSolver {
 
     //Constructor
     public CDCLSolver(List<Clause> clauses) {
-        this.verbose = true;
+        this.verbose = false;
         this.clauses = clauses;
         this.learnedClauses = new ArrayList<>();
         this.implicationGraph = new ImplicationGraph();
@@ -52,13 +52,14 @@ public class CDCLSolver {
             }
 
             //check if the decision caused a conflict
-            Clause falseClause = getFalseClause();
+            /*Clause falseClause = getFalseClause();
             if (falseClause != null) {
                 implicationGraph.addConflictNode(assignmentStack.peek(), null, falseClause);
                 Clause learnedClause = analyzeConflict();
             }
 
             if (falseClause == null) {
+                */
                 Boolean foundConflict = false;
                 do {
                     //Start the BCP process
@@ -86,7 +87,7 @@ public class CDCLSolver {
                     }  
                 } while (foundConflict == true);
             }
-        }
+        /*}*/
     }
 
     //currently finds first unassigned literal from first unsatisfied clause
