@@ -23,6 +23,7 @@ public class CDCLSolver {
     public List<Clause> learnedClauses; // conflict Clauses learned through implication graph, initially empty
     private ImplicationGraph implicationGraph;  //contains Nodes that contain assigments and antecedents
     private Stack<Assignment> assignmentStack; // To track variable assignments
+    private Map<Integer, Assignment> assignmentMap;
     private int currentDecisionLevel;
 
     //Constructor
@@ -32,6 +33,7 @@ public class CDCLSolver {
         this.learnedClauses = new ArrayList<>();
         this.implicationGraph = new ImplicationGraph();
         this.assignmentStack = new Stack<>();
+        this.assignmentMap = new HashMap<>();
         this.currentDecisionLevel = 0;
     }
     // Main method to solve the SAT problem
@@ -117,7 +119,7 @@ public class CDCLSolver {
             //Add new assignment to stack
             Assignment decision = new Assignment(decisionLiteral, value, currentDecisionLevel, Assignment.AssignmentType.DECISION);
             assignmentStack.push(decision);
-            
+            assignmentMap.put(decisionLiteral.getVariable(), decision);
             //Add assignment to implication graph
             implicationGraph.addDecision(decision);
             return true; // A decision has been made
@@ -231,6 +233,7 @@ public class CDCLSolver {
             if (decisionLevel > backtrackLevel) {
                 // Remove the assignment if its decision level is greater than backtrackLevel
                 iterator.remove();
+                assignmentMap.remove(assignment.getLiteral().getVariable());
             }
         }
     }
@@ -351,6 +354,7 @@ private boolean allLiteralsFalse(Clause clause) {
     
         // Push the implied assignment onto the assignment stack
         assignmentStack.push(impliedAssignment);
+        assignmentMap.put(unitLiteral.getVariable(), impliedAssignment);
     }
 
 
@@ -360,17 +364,16 @@ private boolean allLiteralsFalse(Clause clause) {
     //the unit clause to exist
     private List<Assignment> findAntecedentsForUnitClause(Clause unitClause) {
         List<Assignment> antecedents = new ArrayList<>();
-        // Iterate through the assignment stack to find assignments that made the other literals false
-        for (Assignment assignment : assignmentStack) {
-            // Check if the assignment is related to any literal in the clause
             for (Literal literal : unitClause.getLiterals()) {
                 // The assignment must correspond to a literal in the clause and make it false
-                if (assignment.getLiteral().getVariable() == literal.getVariable()/*  && 
-                    assignment.getValue() != literal.isNegated()*/) {
-                    antecedents.add(assignment);
+                Assignment antecedent = assignmentMap.get(literal.getVariable());
+                if (antecedent != null) {
+                    if (antecedent.getLiteral().getVariable() == literal.getVariable()/*  && 
+                        assignment.getValue() != literal.isNegated()*/) {
+                        antecedents.add(antecedent);
+                    }
                 }
             }
-        }
         return antecedents;
     }
 
@@ -407,16 +410,14 @@ private boolean allLiteralsFalse(Clause clause) {
 
     //helper function determines if a literal evaluates to true under current stack of assignments
     private boolean literalIsTrue(Literal literal) {
-        for (Assignment assignment : assignmentStack) { //loop through all assignments
-            if (assignment.getLiteral().getVariable() == literal.getVariable()) {   //literal is assigned
-                if (literal.isNegated()) {
-                    return assignment.getValue() == false; // Expect the assignment value to be false for a negated literal to be true
-                } else {
-                    return assignment.getValue() == true; // Expect the assignment value to be true for a non-negated literal to be true
-                }
-            }
+        Assignment assignment = assignmentMap.get(literal.getVariable());
+        if (assignment == null) return false;
+
+        if (literal.isNegated()) {
+            return assignment.getValue() == false; // Expect the assignment value to be false for a negated literal to be true
+        } else {
+            return assignment.getValue() == true; // Expect the assignment value to be true for a non-negated literal to be true
         }
-        return false; // Literal is not assigned, so default to false
     }
 
     //helper function to determine if a literal has already been assigned
