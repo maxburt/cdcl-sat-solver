@@ -54,14 +54,14 @@ public class CDCLSolver {
             }
 
             //check if the decision caused a conflict
-            /*Clause falseClause = getFalseClause();
+            Clause falseClause = getFalseClause();
             if (falseClause != null) {
                 implicationGraph.addConflictNode(assignmentStack.peek(), null, falseClause);
                 Clause learnedClause = analyzeConflict();
             }
 
             if (falseClause == null) {
-                */
+                
                 Boolean foundConflict = false;
                 do {
                     //Start the BCP process
@@ -89,7 +89,7 @@ public class CDCLSolver {
                     }  
                 } while (foundConflict == true);
             }
-        /*}*/
+        }
     }
 
     //currently finds first unassigned literal from first unsatisfied clause
@@ -288,6 +288,7 @@ private boolean testAssignmentForConflict(Literal literal, Clause unitClause) {
     // Temporarily add the assignment
     Assignment assignment = new Assignment(literal, !literal.isNegated(), currentDecisionLevel, Assignment.AssignmentType.IMPLICATION);
     assignmentStack.push(assignment);
+    assignmentMap.put(literal.getVariable(), assignment);
     // Check if any clause becomes false
     for (Clause clause : getAllClauses()) {
         if (!clauseIsSatisfied(clause) && allLiteralsFalse(clause)) {
@@ -319,6 +320,7 @@ private boolean testAssignmentForConflict(Literal literal, Clause unitClause) {
     }
     // No conflict found, revert the temporary assignment
     assignmentStack.pop();
+    assignmentMap.remove(literal.getVariable());
     return false; // No conflict detected
 }
 
@@ -354,7 +356,7 @@ private boolean allLiteralsFalse(Clause clause) {
     
         // Push the implied assignment onto the assignment stack
         assignmentStack.push(impliedAssignment);
-        assignmentMap.put(unitLiteral.getVariable(), impliedAssignment);
+        assignmentMap.put(impliedAssignment.getLiteral().getVariable(), impliedAssignment);
     }
 
 
@@ -411,7 +413,10 @@ private boolean allLiteralsFalse(Clause clause) {
     //helper function determines if a literal evaluates to true under current stack of assignments
     private boolean literalIsTrue(Literal literal) {
         Assignment assignment = assignmentMap.get(literal.getVariable());
-        if (assignment == null) return false;
+
+        if (assignment == null){
+            return false;
+        }
 
         if (literal.isNegated()) {
             return assignment.getValue() == false; // Expect the assignment value to be false for a negated literal to be true
@@ -515,5 +520,14 @@ private boolean allLiteralsFalse(Clause clause) {
             }
         }
         return null;
+    }
+
+    public void printAssignmentMap() {
+        System.out.println("Assignment Map:");
+        for (Map.Entry<Integer, Assignment> entry : assignmentMap.entrySet()) {
+            Integer variable = entry.getKey();
+            Assignment assignment = entry.getValue();
+            System.out.println("Variable: " + variable + ", Assignment: " + assignment);
+        }
     }
 }

@@ -94,6 +94,7 @@ public class ImplicationGraph {
             System.out.println("This assignment caused a conflict node to be made");
             System.out.print("False clause is ");
             CNFConverter.printClause(clause);
+
         }
 
         //Conflict node now has NO assigment
