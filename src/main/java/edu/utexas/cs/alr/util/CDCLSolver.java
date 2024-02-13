@@ -24,6 +24,7 @@ public class CDCLSolver {
     private ImplicationGraph implicationGraph;  //contains Nodes that contain assigments and antecedents
     private Stack<Assignment> assignmentStack; // To track variable assignments
     private Map<Integer, Assignment> assignmentMap;
+    private Map<Integer, Integer> literalScoreMap;
     private int currentDecisionLevel;
 
     //Constructor
@@ -34,10 +35,13 @@ public class CDCLSolver {
         this.implicationGraph = new ImplicationGraph();
         this.assignmentStack = new Stack<>();
         this.assignmentMap = new HashMap<>();
+        this.literalScoreMap = new HashMap<>();         
         this.currentDecisionLevel = 0;
     }
     // Main method to solve the SAT problem
     public boolean solve(){
+        literalScoreMap = mapVariableToScore();
+        //printVariableToScore(literalScoreMap);
         while (true) {
             //Checks learned clauses to see if they contain
             //unit clauses and their negations
@@ -73,6 +77,22 @@ public class CDCLSolver {
                         }
                         //Analyze conflict to create learned clause
                         Clause learnedClause = analyzeConflict();
+                        
+
+                        //update literalScoreMap
+                        for (Literal literal : learnedClause.getLiterals()) {
+                            int variable = literal.getVariable();
+                            literalScoreMap.put(variable, literalScoreMap.getOrDefault(variable, 0) + 1);
+                        } 
+                        //Every 3rd learned clause divide all scores by 3
+                        if (learnedClauses.size() % 3 == 0) {
+                            for (int variable : literalScoreMap.keySet()) {
+                                int currentScore = literalScoreMap.get(variable);
+                                literalScoreMap.put(variable, currentScore / 2);
+                            } 
+                        }
+                        ///////
+
                         backtrack(learnedClause);
                         if (currentDecisionLevel < 0) {
                             return false; 
@@ -95,6 +115,21 @@ public class CDCLSolver {
     //currently finds first unassigned literal from first unsatisfied clause
     private boolean makeDecision() {
 
+        int maxScore = Integer.MIN_VALUE;
+        int decisionVariable = -1;
+
+        for (int variable : literalScoreMap.keySet()) {
+            // Check if the variable is not already assigned
+            if (!assignmentMap.containsKey(variable)) {
+                int score = literalScoreMap.get(variable);
+                if (score > maxScore) {
+                    maxScore = score;
+                    decisionVariable = variable;
+                }
+            }
+        }
+        Literal decisionLiteral = new Literal(decisionVariable, true);
+/*
         //look for first unassigned literal in the first unsatisfied clause of learned clauses
         Literal decisionLiteral = findUnassignedLiteralFromUnsatisfiedClauses(learnedClauses);
 
@@ -103,6 +138,7 @@ public class CDCLSolver {
             // If no suitable literal is found in learned clauses, check original clauses
             decisionLiteral = findUnassignedLiteralFromUnsatisfiedClauses(clauses);
         }
+        */
 
         if (decisionLiteral != null) {
             //Check if a satisfying decision would
@@ -516,12 +552,34 @@ private boolean allLiteralsFalse(Clause clause) {
         return null;
     }
 
-    public void printAssignmentMap() {
+    private void printAssignmentMap() {
         System.out.println("Assignment Map:");
         for (Map.Entry<Integer, Assignment> entry : assignmentMap.entrySet()) {
             Integer variable = entry.getKey();
             Assignment assignment = entry.getValue();
             System.out.println("Variable: " + variable + ", Assignment: " + assignment);
+        }
+    }
+
+    private Map<Integer, Integer> mapVariableToScore() {
+        Map<Integer, Integer> variableToScore = new HashMap<>();
+        // Iterate through each clause
+        for (Clause clause : clauses) {
+            // Iterate through each literal in the clause
+            for (Literal literal : clause.getLiterals()) {
+                // Update the score for the variable of the current literal
+                int variable = literal.getVariable();
+                variableToScore.put(variable, variableToScore.getOrDefault(variable, 0) + 1);
+            }
+        }
+        return variableToScore;
+    }
+
+    private void printVariableToScore(Map<Integer, Integer> variableToScore) {
+        for (Map.Entry<Integer, Integer> entry : variableToScore.entrySet()) {
+            int variable = entry.getKey();
+            int score = entry.getValue();
+            System.out.println("Variable: " + variable + ", Score: " + score);
         }
     }
 }
