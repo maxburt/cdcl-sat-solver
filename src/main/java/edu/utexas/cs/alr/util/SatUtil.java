@@ -24,6 +24,7 @@ public class SatUtil {
     {   
         //converts CNF formula to a list of Clause objects
         List<Clause> clauses = CNFConverter.convertToClauses(expr);
+        CNFConverter.printClauses(clauses);
         CDCLSolver solver = new CDCLSolver(clauses);
         return solver.solve();
 
