@@ -427,13 +427,7 @@ private boolean allLiteralsFalse(Clause clause) {
 
     //helper function to determine if a literal has already been assigned
     private boolean literalIsAssigned(Literal literal) {
-        for (Assignment assignment : assignmentStack) {
-            Literal assignedLiteral = assignment.getLiteral();
-            if (assignedLiteral.getVariable() == literal.getVariable()){
-                return true; // The exact literal is already assigned
-            }
-        }
-        return false; // The literal is not yet assigned
+        return assignmentMap.containsKey(literal.getVariable());
     }
 
     //helper function to determine if a given clause is satisfied
