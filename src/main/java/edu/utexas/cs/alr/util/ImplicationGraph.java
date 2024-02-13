@@ -509,10 +509,6 @@ public class ImplicationGraph {
 
     //main backtracking function to remove all nodes from the map above a given decision level
     private void removeNodesAboveDecisionLevel(int decisionLevelToRemove) {
-        if (decisionLevelToRemove == 0) {
-            nodes.clear();
-            return;
-        }
         List<Node> nodesToRemove = new ArrayList<>();
         for (Node node : nodes.values()) {
             int nodeDecisionLevel = node.getAssignment().getDecisionLevel();
