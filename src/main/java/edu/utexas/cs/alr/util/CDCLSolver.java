@@ -221,6 +221,10 @@ public class CDCLSolver {
 
     //helper function to backtrack assignment stack
     private void backtrackAssignmentList(int backtrackLevel) {
+        if (backtrackLevel == 0) {
+            assignmentStack.clear();
+            return;
+        }
         Iterator<Assignment> iterator = assignmentStack.iterator();
     
         while (iterator.hasNext()) {
