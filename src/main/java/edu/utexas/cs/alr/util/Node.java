@@ -73,6 +73,13 @@ public class Node {
             System.out.println("\t" + antecedent.assignment);
         }
     }
+
+    public void printAntecedentsShort() {
+        for (Node antecedent : antecedents) {
+            System.out.print("\t" + antecedent.assignment.getLiteral());
+        } 
+        System.out.println();
+    }
     
     public void printImplications() {
         System.out.println("Implications for this node are ... ");

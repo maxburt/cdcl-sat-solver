@@ -40,6 +40,39 @@ public class CDCLSolver {
     }
     // Main method to solve the SAT problem
     public boolean solve(){
+
+        Boolean foundConflict = false;
+        //Start by doing Initial propagation of unit clauses that might be present
+        do {
+            //Start the BCP process
+            Clause conflict = unitPropagation();//if conflict encountered, returns a clause
+            if (conflict != null) {     //BCP lead to a conflict
+                foundConflict = true;
+                if (currentDecisionLevel <= 0) {
+                    return false; // Conflict at base level, so UNSAT
+                }
+                //Analyze conflict to create learned clause
+                Clause learnedClause = analyzeConflict();
+                
+                updateLiteralScoreMap(learnedClause);
+
+                backtrack(learnedClause);
+                if (currentDecisionLevel < 0) {
+                    return false; 
+                }
+                
+                //For debugging
+                if (verbose) printAssignmentStack();
+
+            } else {
+                foundConflict = false;
+                if (isSatisfied()) {
+                    return true; // All variables assigned without conflict, so SAT
+                }
+            }  
+        } while (foundConflict == true);
+
+
         literalScoreMap = mapVariableToScore();
         //printVariableToScore(literalScoreMap);
         while (true) {
@@ -66,7 +99,7 @@ public class CDCLSolver {
 
             if (falseClause == null) {
                 
-                Boolean foundConflict = false;
+                foundConflict = false;
                 do {
                     //Start the BCP process
                     Clause conflict = unitPropagation();//if conflict encountered, returns a clause
@@ -78,20 +111,7 @@ public class CDCLSolver {
                         //Analyze conflict to create learned clause
                         Clause learnedClause = analyzeConflict();
                         
-
-                        //update literalScoreMap
-                        for (Literal literal : learnedClause.getLiterals()) {
-                            int variable = literal.getVariable();
-                            literalScoreMap.put(variable, literalScoreMap.getOrDefault(variable, 0) + 1);
-                        } 
-                        //Every 3rd learned clause divide all scores by 3
-                        if (learnedClauses.size() % 3 == 0) {
-                            for (int variable : literalScoreMap.keySet()) {
-                                int currentScore = literalScoreMap.get(variable);
-                                literalScoreMap.put(variable, currentScore / 2);
-                            } 
-                        }
-                        ///////
+                        updateLiteralScoreMap(learnedClause);
 
                         backtrack(learnedClause);
                         if (currentDecisionLevel < 0) {
@@ -580,6 +600,20 @@ private boolean allLiteralsFalse(Clause clause) {
             int variable = entry.getKey();
             int score = entry.getValue();
             System.out.println("Variable: " + variable + ", Score: " + score);
+        }
+    }
+
+    private void updateLiteralScoreMap(Clause learnedClause) {
+        for (Literal literal : learnedClause.getLiterals()) {
+            int variable = literal.getVariable();
+            literalScoreMap.put(variable, literalScoreMap.getOrDefault(variable, 0) + 1);
+        } 
+        //Every 3rd learned clause divide all scores by 3
+        if (learnedClauses.size() % 3 == 0) {
+            for (int variable : literalScoreMap.keySet()) {
+                int currentScore = literalScoreMap.get(variable);
+                literalScoreMap.put(variable, currentScore / 2);
+            } 
         }
     }
 }

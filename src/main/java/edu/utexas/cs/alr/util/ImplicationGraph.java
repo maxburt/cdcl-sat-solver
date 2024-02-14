@@ -45,8 +45,6 @@ public class ImplicationGraph {
     //takes as input the assignment that was just implied via BCP, as well as the list of
     //other previous assignments that forced this assignment (antecedents)
     public void addImplication(Assignment implied, List<Assignment> antecedents) {
-        if (verbose == true) System.out.println("Adding implication node :  " + implied);
-        //if (verbose == true) System.out.println("\tAntecedents passed in : " + antecedents.size());
         
         //adds a new node object to nodes map
         Node impliedNode = nodes.computeIfAbsent(implied.getLiteral().getVariable(), k -> new Node(implied));
@@ -65,6 +63,11 @@ public class ImplicationGraph {
                 System.err.println("Error getting antecedent from new implied assignment");
                 System.exit(1);
             }
+        }
+        if (verbose == true) {
+            System.out.print("Adding implication node :  " + implied);
+            System.out.print("  Antecedents :  " );
+            impliedNode.printAntecedentsShort();
         }
     }
 
@@ -333,12 +336,17 @@ public class ImplicationGraph {
                 mostRecentAntecedentNode = antecedent;
                 decisionLevel = antecedent.getAssignment().getDecisionLevel();         }
         }
-        if (verbose) System.out.println("Most recent antecedent is " + mostRecentAntecedentNode.getAssignment());
+        if (verbose) {
+            if (mostRecentAntecedentNode != null) System.out.println("Most recent antecedent is " + mostRecentAntecedentNode.getAssignment());
+            else System.out.println("No antecedent found");
+        }
         //Create new clause with current node literal,
         //and negated version of antecedent to create new implied clause
         Clause clause = new Clause();
         clause.addLiteralToFront(node.getAssignment().getLiteral());
-        clause.addLiteralToFront(mostRecentAntecedentNode.getAssignment().getLiteral().negate());
+        if (mostRecentAntecedentNode != null) {
+            clause.addLiteralToFront(mostRecentAntecedentNode.getAssignment().getLiteral().negate());
+        }
         
         
         if (verbose){
@@ -389,6 +397,8 @@ public class ImplicationGraph {
     //if UIP is the only variable in the clause from the current decision level
     private Boolean isClauseLearned(Literal UIPLiteral, Clause clause) {
         int UIPVariable = UIPLiteral.getVariable();  
+        int UIPVariable2 = decisionStack.peek().getAssignment().getLiteral().getVariable();
+
         Boolean containsUIP = false;
         int currentDecisionLevel = decisionStack.peek().getAssignment().getDecisionLevel();
         List<Literal> literals = clause.getLiterals();
@@ -397,6 +407,9 @@ public class ImplicationGraph {
         for (Literal literal : literals) {
             //Check if UIP variable is present in the clause
             if (literal.getVariable() == UIPVariable) {
+                containsUIP = true;
+            }
+            else if (literal.getVariable() == UIPVariable2 ) {
                 containsUIP = true;
             }
             Node literalNode = findAssignmentForLiteral(literal);
