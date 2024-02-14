@@ -18,9 +18,9 @@ import static edu.utexas.cs.alr.ast.ExprFactory.*;
 import static edu.utexas.cs.alr.util.ExprWalker.dfsWalk;
 
 public class CDCLSolver {
-    public boolean verbose;
-    public List<Clause> clauses; // The CNF formula as a list of clauses
-    public List<Clause> learnedClauses; // conflict Clauses learned through implication graph, initially empty
+    private boolean verbose;
+    private List<Clause> clauses; // The CNF formula as a list of clauses
+    private List<Clause> learnedClauses; // conflict Clauses learned through implication graph, initially empty
     private ImplicationGraph implicationGraph;  //contains Nodes that contain assigments and antecedents
     private Stack<Assignment> assignmentStack; // To track variable assignments
     private Map<Integer, Assignment> assignmentMap;
@@ -46,7 +46,9 @@ public class CDCLSolver {
         if (initialConflict != null) return false;
         literalScoreMap = mapVariableToScore();
         if (verbose) printVariableToScore(literalScoreMap);
-        
+
+        List<Integer> pureLiterals = lookForPureLiterals(literalScoreMap);
+        removeClausesContainingPureLiterals(pureLiterals);
         while (true) {
             /*//Checks learned clauses to see if it contains contraditory unit clauses
             if (hasContradictoryUnitClause(learnedClauses)) {
@@ -573,6 +575,50 @@ private boolean allLiteralsFalse(Clause clause) {
             int score = entry.getValue();
             System.out.println("Variable: " + variable + ", Score: " + score);
         }
+    }
+
+    private List<Integer> lookForPureLiterals(Map<Integer, Integer> variableToScore) {
+        Set<Integer> pureLiterals = new HashSet();
+        for (Map.Entry<Integer, Integer> entry : variableToScore.entrySet()) {
+            int variable = entry.getKey();
+            if (!variableToScore.containsKey(variable * -1)) {
+                if (verbose) {
+                    System.out.println(variable + " is a pure literal");
+                }
+                pureLiterals.add(variable);
+            }
+        }
+        return new ArrayList<>(pureLiterals);
+    }
+
+    // Method to remove clauses containing any pure literal from the list of pure literals
+    private void removeClausesContainingPureLiterals(List<Integer> pureLiterals) {
+        // Using an iterator to safely remove items while iterating
+        Iterator<Clause> iterator = clauses.iterator();
+        
+        while (iterator.hasNext()) {
+            Clause clause = iterator.next();
+            // Check if the current clause contains any of the pure literals
+            if (containsAnyPureLiteral(clause, pureLiterals)) {
+                iterator.remove(); // Remove the clause if it contains any pure literal
+            }
+        }
+    }
+
+    // Helper method to check if a clause contains any of the pure literals
+    private boolean containsAnyPureLiteral(Clause clause, List<Integer> pureLiterals) {
+        for (Integer literal : pureLiterals) {
+            boolean isNegated = (literal < 0);
+            int variable = Math.abs(literal);
+
+            Literal l = new Literal(variable, isNegated);
+            // Assuming Clause class has a method to check if it contains a literal
+            // This method needs to be implemented in the Clause class
+            if (clause.containsLiteralExactly(l)) {
+                return true;
+            }
+        }
+        return false;
     }
 
     private void updateLiteralScoreMap(Clause learnedClause) {
