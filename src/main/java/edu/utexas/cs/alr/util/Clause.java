@@ -1,13 +1,27 @@
 package edu.utexas.cs.alr.util;
 import java.util.*;
 public class Clause {
+    int number;
     private final List<Literal> literals = new ArrayList<>();
     private Literal watchLiteral1;
     private Literal watchLiteral2;
 
     public Clause() {
+        number = 0;
         watchLiteral1 = null;
         watchLiteral2 = null;
+    }
+    public Clause(int x) {
+        number = x;
+        watchLiteral1 = null;
+        watchLiteral2 = null;
+    } 
+
+    public void setClauseNumber(int x) {
+        number = x;
+    }
+    public int getClauseNumber() {
+        return number;
     }
 
     public void initWatchLiterals(){

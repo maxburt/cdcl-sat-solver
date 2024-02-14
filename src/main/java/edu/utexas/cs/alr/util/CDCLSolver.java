@@ -41,14 +41,32 @@ public class CDCLSolver {
     // Main method to solve the SAT problem
     public boolean solve(){
 
-        Boolean foundConflict = false;
+        //pre-process
+        
+        //Run BCP
         Clause initialConflict = unitPropagation();
-        if (initialConflict != null) return false;
+        if (initialConflict != null){
+            if (verbose) {
+                System.out.println("Found initial conflict during BCP in pre-processesor step");
+            }
+            return false;
+        }
+        //Create Map of Literal Scores
         literalScoreMap = mapVariableToScore();
         if (verbose) printVariableToScore(literalScoreMap);
-
+        
+        //Apply pure literal propagation
         List<Integer> pureLiterals = lookForPureLiterals(literalScoreMap);
         removeClausesContainingPureLiterals(pureLiterals);
+        
+        //Set numbers for clauses in final clause list
+        int idx = 0;
+        for (Clause clause : clauses) {
+            clause.setClauseNumber(idx);
+            idx++;
+        }
+        ////////done with pre-process
+
         while (true) {
             /*//Checks learned clauses to see if it contains contraditory unit clauses
             if (hasContradictoryUnitClause(learnedClauses)) {
@@ -71,7 +89,7 @@ public class CDCLSolver {
 
             if (falseClause == null) {
 */
-                foundConflict = false;
+                Boolean foundConflict = false;
                 do {
                     //Start the BCP process
                     Clause conflict = unitPropagation();//if conflict encountered, returns a clause
@@ -370,7 +388,7 @@ private boolean allLiteralsFalse(Clause clause) {
 
 
     //This function assigns a unit literal to make it evaluate to true
-    private void propagate(Literal unitLiteral, Clause unitClause) {
+    private void propagate(Literal unitLiteral, Clause clause) {
         
         boolean value = !unitLiteral.isNegated();
     
@@ -379,10 +397,10 @@ private boolean allLiteralsFalse(Clause clause) {
         // Determine the antecedents from the assignment stack
         // this function searches assignment stack and finds the assignments that forced
         // the assigment in the unit clause
-        List<Assignment> antecedents = findAntecedentsForUnitClause(unitClause);
-    
+        List<Assignment> antecedents = findAntecedentsForUnitClause(clause);
+        
         // Add the implication to the implication graph with its antecedents
-        implicationGraph.addImplication(impliedAssignment, antecedents);
+        implicationGraph.addImplication(impliedAssignment, antecedents, clause);
     
         // Push the implied assignment onto the assignment stack
         assignmentStack.push(impliedAssignment);

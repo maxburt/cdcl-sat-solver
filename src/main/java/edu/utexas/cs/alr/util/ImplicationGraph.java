@@ -44,7 +44,7 @@ public class ImplicationGraph {
     //function to add an implied node to the implication graph 
     //takes as input the assignment that was just implied via BCP, as well as the list of
     //other previous assignments that forced this assignment (antecedents)
-    public void addImplication(Assignment implied, List<Assignment> antecedents) {
+    public void addImplication(Assignment implied, List<Assignment> antecedents, Clause clause) {
         
         //adds a new node object to nodes map
         Node impliedNode = nodes.computeIfAbsent(implied.getLiteral().getVariable(), k -> new Node(implied));
@@ -90,7 +90,7 @@ public class ImplicationGraph {
         if (assignment.getType() == Assignment.AssignmentType.DECISION) {
             //Assignment has already been added
         } else {
-            this.addImplication(assignment, antecedents); 
+            this.addImplication(assignment, antecedents, clause); 
         }
 
         if (verbose == true) {
@@ -231,7 +231,6 @@ public class ImplicationGraph {
     public Clause createLearnedClause(Node UIP, Node conflictNode, Stack<Assignment> assignmentStack) {
         
         //Move Analyze conflict bulk of code to here
-
         
         //Step 0, create a starting clause based on incoming nodes to conflict node
         Clause learnedClause = generateStartingClause(conflictNode);
@@ -263,7 +262,7 @@ public class ImplicationGraph {
             }
             if (verbose) System.out.println("Most recent literal is " + mostRecent.getAssignment());
 
-            //Step 3: Create a clause that is implied by mostRecent and any antecedent of mostRecent
+            //Step 3: Create a clause that is implied by mostRecent and all antecedents of mostRecent
             Clause newClause = createImpliedClause(mostRecent);
             if (newClause == null) {
                 System.err.println("Error creating implied clause");
@@ -317,7 +316,7 @@ public class ImplicationGraph {
 
     //Helper function used in creating the learned clause algorithm
     private Clause createImpliedClause(Node node) {
-        
+       /* 
         //Get most recently assigned antecedent node
         Node mostRecentAntecedentNode = null;
         List<Node> antecedents = node.getAntecedents();
@@ -335,17 +334,18 @@ public class ImplicationGraph {
             if (antecedent.getAssignment().getDecisionLevel() > decisionLevel) {
                 mostRecentAntecedentNode = antecedent;
                 decisionLevel = antecedent.getAssignment().getDecisionLevel();         }
-        }
+        }*/
         if (verbose) {
-            if (mostRecentAntecedentNode != null) System.out.println("Most recent antecedent is " + mostRecentAntecedentNode.getAssignment());
-            else System.out.println("No antecedent found");
+            node.printAntecedents();
         }
+
+
         //Create new clause with current node literal,
         //and negated version of antecedent to create new implied clause
         Clause clause = new Clause();
         clause.addLiteralToFront(node.getAssignment().getLiteral());
-        if (mostRecentAntecedentNode != null) {
-            clause.addLiteralToFront(mostRecentAntecedentNode.getAssignment().getLiteral().negate());
+        for (Node ant : node.getAntecedents()) {
+            clause.addLiteralToFront(ant.getAssignment().getLiteral().negate());
         }
         
         
