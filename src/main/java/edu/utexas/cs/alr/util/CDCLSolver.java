@@ -106,11 +106,11 @@ public class CDCLSolver {
     private boolean makeDecision() {
 
         int maxScore = Integer.MIN_VALUE;
-        int decisionVariable = -1;
+        int decisionVariable = -9999;
 
         for (int variable : literalScoreMap.keySet()) {
             // Check if the variable is not already assigned
-            if (!assignmentMap.containsKey(variable)) {
+            if (!assignmentMap.containsKey(Math.abs(variable))) {
                 int score = literalScoreMap.get(variable);
                 if (score > maxScore) {
                     maxScore = score;
@@ -118,7 +118,8 @@ public class CDCLSolver {
                 }
             }
         }
-        Literal decisionLiteral = new Literal(decisionVariable, true);
+        boolean isNegated= (decisionVariable < 0); //Sets isNegated to True if decisionVar < 0
+        Literal decisionLiteral = new Literal(Math.abs(decisionVariable), isNegated);
 /*
         //look for first unassigned literal in the first unsatisfied clause of learned clauses
         Literal decisionLiteral = findUnassignedLiteralFromUnsatisfiedClauses(learnedClauses);
@@ -133,19 +134,20 @@ public class CDCLSolver {
         if (decisionLiteral != null) {
             //Check if a satisfying decision would
             //falsify a unit clause in the learnedClauses and clauses list
-            boolean value = false;
-            if (wouldFalsifyUnitClause(decisionLiteral)) {
+            boolean value = !decisionLiteral.isNegated();
+            /*if (wouldFalsifyUnitClause(decisionLiteral)) {
                 value = decisionLiteral.isNegated(); 
             }                
             else {
                 value = !decisionLiteral.isNegated();
-            }            
+            } 
+            */           
             
             currentDecisionLevel++;
             //Add new assignment to stack
             Assignment decision = new Assignment(decisionLiteral, value, currentDecisionLevel, Assignment.AssignmentType.DECISION);
             assignmentStack.push(decision);
-            assignmentMap.put(decisionLiteral.getVariable(), decision);
+            assignmentMap.put(Math.abs(decisionLiteral.getVariable()), decision);
             //Add assignment to implication graph
             implicationGraph.addDecision(decision);
             return true; // A decision has been made
@@ -558,7 +560,7 @@ private boolean allLiteralsFalse(Clause clause) {
             // Iterate through each literal in the clause
             for (Literal literal : clause.getLiterals()) {
                 // Update the score for the variable of the current literal
-                int variable = literal.getVariable();
+                int variable = literal.isNegated() ? -literal.getVariable() : literal.getVariable();
                 variableToScore.put(variable, variableToScore.getOrDefault(variable, 0) + 1);
             }
         }
