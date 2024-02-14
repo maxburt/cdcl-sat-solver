@@ -43,10 +43,10 @@ public class CDCLSolver {
 
         Boolean foundConflict = false;
         //Start by doing Initial propagation of unit clauses that might be present
-        do {
+       /*  do { */
             //Start the BCP process
-            Clause conflict = unitPropagation();//if conflict encountered, returns a clause
-            if (conflict != null) {     //BCP lead to a conflict
+            Clause initialConflict = unitPropagation();//if conflict encountered, returns a clause
+            /*if (conflict != null) {     //BCP lead to a conflict
                 foundConflict = true;
                 if (currentDecisionLevel <= 0) {
                     return false; // Conflict at base level, so UNSAT
@@ -71,7 +71,8 @@ public class CDCLSolver {
                 }
             }  
         } while (foundConflict == true);
-
+*/      
+        if (initialConflict != null) return false;
 
         literalScoreMap = mapVariableToScore();
         //printVariableToScore(literalScoreMap);
