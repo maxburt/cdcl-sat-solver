@@ -42,55 +42,24 @@ public class CDCLSolver {
     public boolean solve(){
 
         Boolean foundConflict = false;
-        //Start by doing Initial propagation of unit clauses that might be present
-       /*  do { */
-            //Start the BCP process
-            Clause initialConflict = unitPropagation();//if conflict encountered, returns a clause
-            /*if (conflict != null) {     //BCP lead to a conflict
-                foundConflict = true;
-                if (currentDecisionLevel <= 0) {
-                    return false; // Conflict at base level, so UNSAT
-                }
-                //Analyze conflict to create learned clause
-                Clause learnedClause = analyzeConflict();
-                
-                updateLiteralScoreMap(learnedClause);
-
-                backtrack(learnedClause);
-                if (currentDecisionLevel < 0) {
-                    return false; 
-                }
-                
-                //For debugging
-                if (verbose) printAssignmentStack();
-
-            } else {
-                foundConflict = false;
-                if (isSatisfied()) {
-                    return true; // All variables assigned without conflict, so SAT
-                }
-            }  
-        } while (foundConflict == true);
-*/      
+        Clause initialConflict = unitPropagation();
         if (initialConflict != null) return false;
-
         literalScoreMap = mapVariableToScore();
-        //printVariableToScore(literalScoreMap);
+        if (verbose) printVariableToScore(literalScoreMap);
+        
         while (true) {
-            //Checks learned clauses to see if they contain
-            //unit clauses and their negations
+            /*//Checks learned clauses to see if it contains contraditory unit clauses
             if (hasContradictoryUnitClause(learnedClauses)) {
                 System.out.println("Has contradictory unit clauses in learned clause");
                 return false;
             } 
-            
-
+            */
             boolean decisionMade = makeDecision();
 
             if (!decisionMade) {    //No decision made, so its either satisfied currently, or it cant be satisfied
                 return isSatisfied();
             }
-
+/* 
             //check if the decision caused a conflict
             Clause falseClause = getFalseClause();
             if (falseClause != null) {
@@ -99,7 +68,7 @@ public class CDCLSolver {
             }
 
             if (falseClause == null) {
-                
+*/
                 foundConflict = false;
                 do {
                     //Start the BCP process
@@ -130,7 +99,7 @@ public class CDCLSolver {
                     }  
                 } while (foundConflict == true);
             }
-        }
+        /*} */
     }
 
     //currently finds first unassigned literal from first unsatisfied clause
