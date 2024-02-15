@@ -29,7 +29,7 @@ public class CDCLSolver {
 
     //Constructor
     public CDCLSolver(List<Clause> clauses) {
-        this.verbose = false;
+        this.verbose = true;
         this.clauses = clauses;
         this.learnedClauses = new ArrayList<>();
         this.implicationGraph = new ImplicationGraph();
@@ -228,7 +228,6 @@ public class CDCLSolver {
                 System.err.println("Error last decision node to conflict node");
                 System.exit(1);
             }
-
             //Find Unique implication point closest to conflict node
             UIP = implicationGraph.findClosestCommonNode(paths, conflictNode);
 

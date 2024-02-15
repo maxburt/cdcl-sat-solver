@@ -21,7 +21,7 @@ public class ImplicationGraph {
     public Stack<Node> decisionStack; // To track decision levels
 
     public ImplicationGraph() {
-        this.verbose = false;
+        this.verbose = true;
         this.nodes = new HashMap<>();
         this.decisionStack = new Stack<>();
     }
@@ -97,8 +97,8 @@ public class ImplicationGraph {
             System.out.println("This assignment caused a conflict node to be made");
             System.out.print("False clause is ");
             CNFConverter.printClause(clause);
-
         }
+
 
         //Conflict node now has NO assigment
         Node conflictNode = new Node();
@@ -316,9 +316,9 @@ public class ImplicationGraph {
 
     //Helper function used in creating the learned clause algorithm
     private Clause createImpliedClause(Node node) {
-       /* 
+        
         //Get most recently assigned antecedent node
-        Node mostRecentAntecedentNode = null;
+        /* Node mostRecentAntecedentNode = null;
         List<Node> antecedents = node.getAntecedents();
         if (verbose) {
             System.out.println("Node is " + node.getAssignment());
@@ -334,7 +334,7 @@ public class ImplicationGraph {
             if (antecedent.getAssignment().getDecisionLevel() > decisionLevel) {
                 mostRecentAntecedentNode = antecedent;
                 decisionLevel = antecedent.getAssignment().getDecisionLevel();         }
-        }*/
+        } */
         if (verbose) {
             node.printAntecedents();
         }
