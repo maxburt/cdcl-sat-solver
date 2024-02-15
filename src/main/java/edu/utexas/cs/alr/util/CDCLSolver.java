@@ -29,7 +29,7 @@ public class CDCLSolver {
 
     //Constructor
     public CDCLSolver(List<Clause> clauses) {
-        this.verbose = true;
+        this.verbose = false;
         this.clauses = clauses;
         this.learnedClauses = new ArrayList<>();
         this.implicationGraph = new ImplicationGraph();
