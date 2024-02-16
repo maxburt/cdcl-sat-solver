@@ -1,19 +1,6 @@
 package edu.utexas.cs.alr.util;
-import edu.utexas.cs.alr.ast.Expr;
-import edu.utexas.cs.alr.ast.*;
-import edu.utexas.cs.alr.parser.ExprBaseListener;
-import edu.utexas.cs.alr.parser.ExprLexer;
-import edu.utexas.cs.alr.parser.ExprParser;
-import org.antlr.v4.runtime.*;
-import org.antlr.v4.runtime.misc.ParseCancellationException;
-import org.antlr.v4.runtime.tree.ParseTreeWalker;
-import java.io.IOException;
-import java.io.InputStream;
-import java.io.PrintStream;
+
 import java.util.*;
-import java.util.stream.Stream;
-import static edu.utexas.cs.alr.ast.ExprFactory.*;
-import static edu.utexas.cs.alr.util.ExprWalker.dfsWalk;
 
 public class Node {
     private Assignment assignment;
@@ -24,14 +11,14 @@ public class Node {
     public Node(Assignment assignment) {
         this.assignment = assignment;
         this.antecedents = new ArrayList<>();
-        this.implications = new ArrayList<>(); 
+        this.implications = new ArrayList<>();
         this.isConflictNode = false;
     }
 
     public Node() {
         this.assignment = null;
         this.antecedents = new ArrayList<>();
-        this.implications = new ArrayList<>(); 
+        this.implications = new ArrayList<>();
         this.isConflictNode = false;
     }
 
@@ -77,17 +64,16 @@ public class Node {
     public void printAntecedentsShort() {
         for (Node antecedent : antecedents) {
             System.out.print("\t" + antecedent.assignment.getLiteral());
-        } 
+        }
         System.out.println();
     }
-    
+
     public void printImplications() {
         System.out.println("Implications for this node are ... ");
         for (Node implication : implications) {
             if (implication.isConflictNode()) {
-                System.out.println("\t" + "Conflict node"); 
-            }
-            else {
+                System.out.println("\t" + "Conflict node");
+            } else {
                 System.out.println("\t" + implication.assignment);
             }
         }
