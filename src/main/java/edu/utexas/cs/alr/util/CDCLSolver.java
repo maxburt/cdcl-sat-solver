@@ -212,36 +212,14 @@ public class CDCLSolver {
             System.out.println("Analyzing conflict...");
         // Get conflict node from implication graph
         Node conflictNode = implicationGraph.getConflictNode();
-        Node UIP = null;
         if (conflictNode != null) {
             if (verbose)
                 System.out.println("Got conflict node...");
-
-            // Get all paths from last decision node to conflict node
-
-            List<List<Node>> paths = implicationGraph.findAllPathsFromDecisionToConflict(conflictNode);
-            if (paths == null) {
-                System.err.println("Error last decision node to conflict node");
-                System.exit(1);
-            }
-            // Find Unique implication point closest to conflict node
-            UIP = implicationGraph.findClosestCommonNode(paths, conflictNode);
-
-            if (UIP == null) {
-                System.err.println("Could not find UIP from paths");
-                System.exit(1);
-            } else {
-                if (verbose)
-                    System.out.println("Found UIP. UIP is " + UIP.getAssignment());
-            }
-        } else {
-            System.err.println("No conflict node detected in graph");
-            System.exit(1);
         }
 
         // use the conflict node and UIP to create a new clause to add to the
         // learnedClauses list
-        Clause learnedClause = implicationGraph.createLearnedClause(UIP, conflictNode, assignmentStack);
+        Clause learnedClause = implicationGraph.createLearnedClause(conflictNode, assignmentStack);
         if (learnedClause != null) {
             // Add learned clause to learnedClause map
             learnedClauses.add(0, learnedClause);

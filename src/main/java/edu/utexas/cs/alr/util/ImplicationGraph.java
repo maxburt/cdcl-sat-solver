@@ -226,7 +226,7 @@ public class ImplicationGraph {
     /////////
 
     // The function for making learned clause
-    public Clause createLearnedClause(Node UIP, Node conflictNode, Stack<Assignment> assignmentStack) {
+    public Clause createLearnedClause(Node conflictNode, Stack<Assignment> assignmentStack) {
 
         // Move Analyze conflict bulk of code to here
 
