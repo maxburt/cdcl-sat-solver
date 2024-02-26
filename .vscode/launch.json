@@ -3,15 +3,11 @@
     "configurations": [
         {
             "type": "java",
-            "name": "Launch Main",
+            "name": "Debugger 439348863",
             "request": "launch",
             "mainClass": "edu.utexas.cs.alr.SATDriver",
-            "args": "",
-            "projectName": "SATDriver",
-            "classPaths": [
-                "${workspaceFolder}/target/pa1-1.0-SNAPSHOT-jar-with-dependencies.jar"
-            ],
-            "console": "internalConsole"
+            "projectName": "pa1",
+            "args": "< resources/test-cases/sat/439348863",
         }
     ]
 }
