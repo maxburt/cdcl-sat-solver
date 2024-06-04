@@ -1,6 +1,6 @@
 [![Review Assignment Due Date](https://classroom.github.com/assets/deadline-readme-button-24ddc0f5d75046c5622901739e7c5dd533143b0c8e959d652212380cedb1ea36.svg)](https://classroom.github.com/a/JOARfkpj)
 
-# CDCL SAT solver.
+# CDCL SAT solver. For class at UT Austin
 
 This repository contains the framework you must extend to solve
 Programming Assignment 1. In the following sections, we describe how you can build
