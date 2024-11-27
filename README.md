@@ -1,3 +1,9 @@
+This was a large project for my Automated Logical Reasoning class to build a Conflict Driven Clause Learner SAT proble msolver. 
+Below are the original directions for the project.
+
+
+
+
 [![Review Assignment Due Date](https://classroom.github.com/assets/deadline-readme-button-24ddc0f5d75046c5622901739e7c5dd533143b0c8e959d652212380cedb1ea36.svg)](https://classroom.github.com/a/JOARfkpj)
 
 # CDCL SAT solver. For class at UT Austin
